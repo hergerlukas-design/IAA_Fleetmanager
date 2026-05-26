@@ -1,0 +1,27 @@
+# Fly.io config – generated for CLX Fleetmanager
+# Run: fly launch --name clx-fleetmanager (then fly deploy)
+
+app = "clx-fleetmanager"
+primary_region = "fra"
+
+[build]
+
+[[services]]
+  internal_port = 80
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+    force_https = true
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [services.concurrency]
+    hard_limit = 50
+    soft_limit = 30
+
+[[vm]]
+  size = "shared-cpu-1x"
