@@ -5,6 +5,7 @@ import { fetchKmHistory } from '@/lib/kmHistory'
 import type { KmHistoryEntry } from '@/lib/types'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { savePdf } from '@/lib/export'
 
 interface Props {
   vehicleId: string
@@ -38,7 +39,7 @@ export default function KmHistoryCard({ vehicleId, vehicleLabel, pdfOnly = false
     })
   }
 
-  function generatePdf(data: KmHistoryEntry[]) {
+  async function generatePdf(data: KmHistoryEntry[]) {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
     doc.setFontSize(14)
     doc.text(`${t('km_history.pdf_title')} – ${vehicleLabel}`, 14, 14)
@@ -68,7 +69,7 @@ export default function KmHistoryCard({ vehicleId, vehicleLabel, pdfOnly = false
       alternateRowStyles: { fillColor: [248, 250, 252] },
     })
 
-    doc.save(`Fahrtenbuch_${vehicleLabel}_${new Date().toISOString().slice(0, 10)}.pdf`)
+    await savePdf(doc, `Fahrtenbuch_${vehicleLabel}_${new Date().toISOString().slice(0, 10)}.pdf`)
   }
 
   // pdfOnly: fetch lazily on click, then generate
@@ -83,8 +84,8 @@ export default function KmHistoryCard({ vehicleId, vehicleLabel, pdfOnly = false
   }
 
   // Normal mode: entries already in state (loaded on open)
-  function handleExportPdfSync() {
-    generatePdf(entries)
+  async function handleExportPdfSync() {
+    await generatePdf(entries)
   }
 
   // ── pdfOnly (admin compact) ────────────────────────────────────────────────

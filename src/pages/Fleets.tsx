@@ -151,8 +151,8 @@ export default function Fleets() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-600">Ohne Flotte</p>
-                <p className="text-xs text-gray-400">{counts['none'].total} Fahrzeuge</p>
+                <p className="font-medium text-gray-600">{t('fleets.unassigned')}</p>
+                <p className="text-xs text-gray-400">{counts['none'].total === 1 ? t('fleets.vehicle_singular') : t('fleets.unassigned_count', { count: counts['none'].total })}</p>
               </div>
               <ChevronRight size={16} className="text-gray-300" />
             </div>

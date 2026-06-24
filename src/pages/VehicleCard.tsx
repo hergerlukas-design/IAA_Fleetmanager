@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -162,13 +162,11 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
   useEffect(() => {
     // Brand/Model suggestions
     supabase.from('vehicles').select('brand_model')
-      .then(({ data, error }) => {
-        console.log('[BasisdatenCard] brand_model fetch:', { data, error })
+      .then(({ data }) => {
         if (!data) return
         const unique = [...new Set(
           data.map((v: { brand_model: string | null }) => v.brand_model).filter((v): v is string => !!v)
         )].sort()
-        console.log('[BasisdatenCard] brandSuggestions:', unique)
         setBrandSuggestions(unique)
       })
 
@@ -348,12 +346,14 @@ function FotosCard({ vehicleId, vehicle, photos, locked, isAdmin, onRefresh }: {
   const { userName } = useAuth()
   const canEdit = !locked && (isAdmin || vehicle.status === 'in_bearbeitung')
   const [uploading, setUploading] = useState<string | null>(null)
+  const [cacheBust, setCacheBust] = useState(0)
   const photoByType = Object.fromEntries(photos.map(p => [p.photo_type, p]))
 
   async function handleFile(type: VehiclePhoto['photo_type'], file: File) {
     setUploading(type)
     try {
       await uploadVehiclePhoto(vehicleId, type, file, userName)
+      setCacheBust(c => c + 1)
       onRefresh()
     } catch (err) {
       console.error('Upload error:', err)
@@ -365,8 +365,12 @@ function FotosCard({ vehicleId, vehicle, photos, locked, isAdmin, onRefresh }: {
 
   async function handleDelete(photo: VehiclePhoto) {
     if (!confirm(t('photos.delete') + '?')) return
-    await deleteVehiclePhoto(photo)
-    onRefresh()
+    try {
+      await deleteVehiclePhoto(photo)
+      onRefresh()
+    } catch (err) {
+      alert(t('errors.save_failed') + '\n' + (err instanceof Error ? err.message : String(err)))
+    }
   }
 
   return (
@@ -392,7 +396,7 @@ function FotosCard({ vehicleId, vehicle, photos, locked, isAdmin, onRefresh }: {
                   photo ? 'border-transparent' : canEdit ? 'border-dashed border-gray-300 hover:border-blue-400' : 'border-gray-200'
                 }`}>
                   {photo
-                    ? <img src={getPhotoUrl(photo.storage_path)} alt={type} className="w-full h-full object-cover" />
+                    ? <img src={`${getPhotoUrl(photo.storage_path)}?v=${cacheBust}`} alt={type} className="w-full h-full object-cover" />
                     : (
                       <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center text-gray-300 gap-1">
                         {isLoading
@@ -414,6 +418,22 @@ function FotosCard({ vehicleId, vehicle, photos, locked, isAdmin, onRefresh }: {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// ─── File preview with proper Object URL cleanup ────────────────────────────
+
+function FilePreview({ file, onRemove }: { file: File; onRemove: () => void }) {
+  const url = useMemo(() => URL.createObjectURL(file), [file])
+  useEffect(() => () => URL.revokeObjectURL(url), [url])
+  return (
+    <div className="relative">
+      <img src={url} alt="" className="w-full aspect-square object-cover rounded-lg" />
+      <button type="button" onClick={onRemove}
+        className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5 shadow">
+        <Trash2 size={9} />
+      </button>
     </div>
   )
 }
@@ -612,15 +632,7 @@ function SchadenCard({ vehicleId, damages, onRefresh }: {
             {formFiles.length > 0 && (
               <div className="grid grid-cols-3 gap-1.5 mb-2">
                 {formFiles.map((f, i) => (
-                  <div key={i} className="relative">
-                    <img src={URL.createObjectURL(f)} alt=""
-                      className="w-full aspect-square object-cover rounded-lg" />
-                    <button type="button"
-                      onClick={() => setFormFiles(fs => fs.filter((_, j) => j !== i))}
-                      className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5 shadow">
-                      <Trash2 size={9} />
-                    </button>
-                  </div>
+                  <FilePreview key={i} file={f} onRemove={() => setFormFiles(fs => fs.filter((_, j) => j !== i))} />
                 ))}
               </div>
             )}
@@ -629,12 +641,12 @@ function SchadenCard({ vehicleId, damages, onRefresh }: {
               <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
                 <input type="file" accept="image/*" capture="environment" className="sr-only"
                   onChange={e => { const f = e.target.files?.[0]; if (f) setFormFiles(fs => [...fs, f]); e.target.value = '' }} />
-                <Camera size={14} /> Kamera
+                <Camera size={14} /> {t('damages.photo_camera')}
               </label>
               <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
                 <input type="file" accept="image/*" multiple className="sr-only"
                   onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) setFormFiles(fs => [...fs, ...files]); e.target.value = '' }} />
-                <Plus size={14} /> Galerie
+                <Plus size={14} /> {t('damages.photo_gallery')}
               </label>
             </div>
           </div>
@@ -1074,15 +1086,20 @@ export default function VehicleCard() {
 
   const loadAll = useCallback(async () => {
     if (!id) return
-    const [v, f, ph, d, pr] = await Promise.all([
-      fetchVehicle(id),
-      fetchActiveFleets(),
-      fetchVehiclePhotos(id),
-      fetchDamages(id),
-      fetchProtocol(id),
-    ])
-    setVehicle(v); setFleets(f); setPhotos(ph); setDamages(d); setProtocol(pr)
-    setLoading(false)
+    try {
+      const [v, f, ph, d, pr] = await Promise.all([
+        fetchVehicle(id),
+        fetchActiveFleets(),
+        fetchVehiclePhotos(id),
+        fetchDamages(id),
+        fetchProtocol(id),
+      ])
+      setVehicle(v); setFleets(f); setPhotos(ph); setDamages(d); setProtocol(pr)
+    } catch {
+      setVehicle(null)
+    } finally {
+      setLoading(false)
+    }
   }, [id])
 
   useEffect(() => { loadAll() }, [loadAll])
@@ -1092,9 +1109,9 @@ export default function VehicleCard() {
     if (!id) return
     const ch = supabase
       .channel(`vehicle-changes:${id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'intake_protocols' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'damage_records' }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'intake_protocols', filter: `vehicle_id=eq.${id}` }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles', filter: `id=eq.${id}` }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'damage_records', filter: `vehicle_id=eq.${id}` }, loadAll)
       .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [id, loadAll])

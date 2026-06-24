@@ -95,7 +95,7 @@ export default function Vehicles() {
                 : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'
             }`}>
             <ArrowUpDown size={11} />
-            {sortBy === 'newest' ? 'Neueste zuerst' : 'A → Z'}
+            {sortBy === 'newest' ? t('vehicles.sort_newest') : t('vehicles.sort_alpha')}
           </button>
           {isAdmin && (
             <button

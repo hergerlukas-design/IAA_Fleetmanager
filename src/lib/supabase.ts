@@ -7,8 +7,9 @@ export const supabase = createClient(url, key)
 
 export const STORAGE_BUCKET = 'clx-assets'
 
-export function getPhotoUrl(storagePath: string): string {
+export function getPhotoUrl(storagePath: string, bustCache = false): string {
   const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath)
+  if (bustCache) return `${data.publicUrl}?t=${Date.now()}`
   return data.publicUrl
 }
 
@@ -62,10 +63,10 @@ async function compressImage(file: File, maxPx = 1920, quality = 0.8): Promise<F
 const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5 MB
 
 export async function uploadFile(path: string, file: File): Promise<string> {
-  if (file.size > MAX_FILE_BYTES) {
+  const toUpload = await compressImage(file)
+  if (toUpload.size > MAX_FILE_BYTES) {
     throw new Error(`Datei zu gross (max. 5 MB)`)
   }
-  const toUpload = await compressImage(file)
   const { error } = await supabase.storage
     .from(STORAGE_BUCKET)
     .upload(path, toUpload, { upsert: true, contentType: toUpload.type || 'image/jpeg' })

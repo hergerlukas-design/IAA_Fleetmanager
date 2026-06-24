@@ -11,21 +11,21 @@ export default function Login() {
   const navigate     = useNavigate()
   const [name, setName]   = useState('')
   const [pin, setPin]     = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [errorKey, setErrorKey] = useState<string | null>(null)
   const pinRef = useRef<HTMLInputElement>(null)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
+    setErrorKey(null)
 
     if (!name.trim()) {
-      setError(t('login.name_required'))
+      setErrorKey('login.name_required')
       return
     }
 
     const level = checkPin(pin)
     if (level === 'none') {
-      setError(t('login.wrong_pin'))
+      setErrorKey('login.wrong_pin')
       setPin('')
       pinRef.current?.focus()
       return
@@ -83,8 +83,8 @@ export default function Login() {
             />
           </div>
 
-          {error && (
-            <p className="text-red-300 text-sm text-center">{error}</p>
+          {errorKey && (
+            <p className="text-red-300 text-sm text-center">{t(errorKey)}</p>
           )}
 
           <button

@@ -1,5 +1,24 @@
 import * as XLSX from 'xlsx'
+import type { jsPDF } from 'jspdf'
 import type { Vehicle, DamageRecord, IntakeProtocol } from './types'
+
+export async function savePdf(doc: jsPDF, filename: string): Promise<void> {
+  const blob = doc.output('blob')
+  const file = new File([blob], filename, { type: 'application/pdf' })
+
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: filename })
+      return
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return
+    }
+  }
+
+  const url = URL.createObjectURL(blob)
+  window.open(url, '_blank')
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}
 
 interface ExportRow {
   Kennzeichen: string

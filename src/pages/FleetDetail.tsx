@@ -13,6 +13,7 @@ import CreateVehicleSheet from './CreateVehicleSheet'
 import AddKmSheet from './AddKmSheet'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { savePdf } from '@/lib/export'
 
 const STATUS_COLORS: Record<string, string> = {
   in_bearbeitung: 'bg-amber-100 text-amber-700',
@@ -219,7 +220,7 @@ export default function FleetDetail() {
       }
 
       const date = new Date().toISOString().slice(0, 10)
-      doc.save(`Fahrtenbuch_${fleet?.name ?? 'Flotte'}_${date}.pdf`)
+      await savePdf(doc, `Fahrtenbuch_${fleet?.name ?? 'Flotte'}_${date}.pdf`)
     } finally {
       setExporting(false)
     }
@@ -244,7 +245,7 @@ export default function FleetDetail() {
             )}
             <h1 className="font-bold text-gray-900 truncate">{fleet?.name ?? '…'}</h1>
           </div>
-          <span className="text-sm text-gray-400">{vehicles.length} Fzg.</span>
+          <span className="text-sm text-gray-400">{t('vehicles.count_short', { count: vehicles.length })}</span>
           <img src="/logo.png" alt="carhandling" className="h-11 w-auto flex-shrink-0" />
         </div>
       }
@@ -270,7 +271,7 @@ export default function FleetDetail() {
                 : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300'
             }`}>
             <ArrowUpDown size={11} />
-            {sortBy === 'newest' ? 'Neueste zuerst' : 'A → Z'}
+            {sortBy === 'newest' ? t('vehicles.sort_newest') : t('vehicles.sort_alpha')}
           </button>
           {isAdmin && (
             <button
@@ -295,12 +296,12 @@ export default function FleetDetail() {
           </div>
         )}
 
-        {!loading && filtered.length === 0 && query && (
-          <p className="text-center text-gray-400 py-8">{t('vehicles.no_results')}</p>
-        )}
-
         {!loading && vehicles.length === 0 && (
           <p className="text-center text-gray-400 py-12">{t('vehicles.no_vehicles')}</p>
+        )}
+
+        {!loading && vehicles.length > 0 && filtered.length === 0 && (
+          <p className="text-center text-gray-400 py-8">{t('vehicles.no_results')}</p>
         )}
 
         {filtered.map((v) => (
