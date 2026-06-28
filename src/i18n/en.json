@@ -217,7 +217,8 @@
     "required": "Required",
     "optional": "Optional",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "retry": "Try again"
   },
   "errors": {
     "load_failed": "Failed to load.",

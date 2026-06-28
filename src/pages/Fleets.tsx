@@ -89,7 +89,8 @@ export default function Fleets() {
       const [f, c] = await Promise.all([fetchActiveFleets(), fetchFleetVehicleCounts()])
       setFleets(f)
       setCounts(c)
-    } catch {
+    } catch (err) {
+      console.error('[Fleets] Supabase load error:', err)
       setError(t('errors.load_failed'))
     } finally {
       setLoading(false)
@@ -122,8 +123,14 @@ export default function Fleets() {
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
-            {error}
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm space-y-3">
+            <p>{error}</p>
+            <button
+              onClick={load}
+              className="w-full py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 font-medium transition-colors"
+            >
+              {t('common.retry')}
+            </button>
           </div>
         )}
 

@@ -217,7 +217,8 @@
     "required": "Pflichtfeld",
     "optional": "Optional",
     "yes": "Ja",
-    "no": "Nein"
+    "no": "Nein",
+    "retry": "Erneut versuchen"
   },
   "errors": {
     "load_failed": "Laden fehlgeschlagen.",

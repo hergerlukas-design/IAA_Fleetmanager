@@ -3,7 +3,14 @@ import { createClient } from '@supabase/supabase-js'
 const url = import.meta.env.VITE_SUPABASE_URL as string
 const key = import.meta.env.VITE_SUPABASE_KEY as string
 
-export const supabase = createClient(url, key)
+if (!url || !key) {
+  console.error(
+    '[Supabase] VITE_SUPABASE_URL oder VITE_SUPABASE_KEY fehlt. ' +
+    'Die App kann keine Daten laden. Bitte Build-Secrets prüfen.',
+  )
+}
+
+export const supabase = createClient(url || 'https://placeholder.supabase.co', key || 'placeholder')
 
 export const STORAGE_BUCKET = 'clx-assets'
 
