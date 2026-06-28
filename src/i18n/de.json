@@ -223,6 +223,7 @@
     "load_failed": "Laden fehlgeschlagen.",
     "save_failed": "Speichern fehlgeschlagen.",
     "delete_failed": "Löschen fehlgeschlagen.",
-    "upload_failed": "Upload fehlgeschlagen."
+    "upload_failed": "Upload fehlgeschlagen.",
+    "file_too_large": "Datei zu gross (max. 5 MB)."
   }
 }
