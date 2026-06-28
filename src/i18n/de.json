@@ -226,5 +226,11 @@
     "delete_failed": "Löschen fehlgeschlagen.",
     "upload_failed": "Upload fehlgeschlagen.",
     "file_too_large": "Datei zu gross (max. 5 MB)."
+  },
+  "update": {
+    "available": "Neue Version verfügbar",
+    "reload": "Aktualisieren",
+    "check": "Nach Updates suchen",
+    "checking": "Suche…"
   }
 }

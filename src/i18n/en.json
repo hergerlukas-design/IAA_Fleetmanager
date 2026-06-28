@@ -226,5 +226,11 @@
     "delete_failed": "Failed to delete.",
     "upload_failed": "Upload failed.",
     "file_too_large": "File too large (max. 5 MB)."
+  },
+  "update": {
+    "available": "New version available",
+    "reload": "Update",
+    "check": "Check for updates",
+    "checking": "Checking…"
   }
 }

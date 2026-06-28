@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Globe, Download, Layers, Plus, Pencil, Trash2, X, Check, MessageSquare, ChevronDown } from 'lucide-react'
+import { Globe, Download, Layers, Plus, Pencil, Trash2, X, Check, MessageSquare, ChevronDown, RefreshCw } from 'lucide-react'
 import Layout from '@/components/Layout'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchFleets, createFleet, updateFleet, deleteFleet, FLEET_COLORS } from '@/lib/fleets'
@@ -12,7 +12,8 @@ import { exportVehiclesToExcel } from '@/lib/export'
 import { fetchFeedback, createFeedback, deleteFeedback } from '@/lib/feedback'
 import type { Fleet, Feedback } from '@/lib/types'
 
-const VERSION = '1.0.0'
+import packageJson from '../../package.json'
+const VERSION = packageJson.version
 
 // ─── Fleet Form ───────────────────────────────────────────────────────────────
 
@@ -111,6 +112,7 @@ export default function Settings() {
   const [feedbackList, setFeedbackList]     = useState<Feedback[]>([])
   const [feedbackListOpen, setFeedbackListOpen] = useState(false)
   const [feedbackListFetched, setFeedbackListFetched] = useState(false)
+  const [checking, setChecking] = useState(false)
 
   const loadFleets = useCallback(async () => {
     const data = await fetchFleets()
@@ -309,6 +311,33 @@ export default function Settings() {
               )}
             </div>
           )}
+        </Section>
+
+        {/* Update check */}
+        <Section title={t('update.check')} icon={<RefreshCw size={18} />}>
+          <button
+            onClick={async () => {
+              setChecking(true)
+              try {
+                if ('serviceWorker' in navigator) {
+                  const reg = await navigator.serviceWorker.getRegistration()
+                  await reg?.update()
+                }
+                if ('caches' in window) {
+                  const keys = await caches.keys()
+                  await Promise.all(keys.map(k => caches.delete(k)))
+                }
+                window.location.reload()
+              } catch {
+                window.location.reload()
+              }
+            }}
+            disabled={checking}
+            className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-medium disabled:opacity-50 hover:bg-blue-700 flex items-center justify-center gap-2"
+          >
+            <RefreshCw size={16} className={checking ? 'animate-spin' : ''} />
+            {checking ? t('update.checking') : t('update.reload')}
+          </button>
         </Section>
 
         {/* Logout */}

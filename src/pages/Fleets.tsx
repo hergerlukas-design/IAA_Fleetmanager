@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Plus, ChevronRight, Car } from 'lucide-react'
+import { Plus, ChevronRight, Car, RefreshCw } from 'lucide-react'
 import Layout from '@/components/Layout'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchActiveFleets, fetchFleetVehicleCounts } from '@/lib/fleets'
@@ -109,7 +109,16 @@ export default function Fleets() {
             <h1 className="text-lg font-bold text-gray-900">{t('fleets.title')}</h1>
             <p className="text-xs text-gray-400">{totalVehicles === 1 ? t('fleets.vehicle_singular') : t('fleets.vehicles_count', { count: totalVehicles })}</p>
           </div>
-          <img src="/logo.png" alt="carhandling" className="h-11 w-auto" />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={load}
+              disabled={loading}
+              className="p-2 rounded-xl text-gray-400 hover:bg-gray-100 active:scale-95 transition-all disabled:opacity-50"
+            >
+              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+            </button>
+            <img src="/logo.png" alt="carhandling" className="h-11 w-auto" />
+          </div>
         </div>
       }
     >
