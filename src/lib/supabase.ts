@@ -61,9 +61,11 @@ async function compressImage(file: File, maxPx = 1920, quality = 0.8): Promise<F
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5 MB
 
+export const ERR_FILE_TOO_LARGE = 'ERR_FILE_TOO_LARGE'
+
 export async function uploadFile(path: string, file: File): Promise<string> {
   if (file.size > MAX_FILE_BYTES) {
-    throw new Error(`Datei zu gross (max. 5 MB)`)
+    throw new Error(ERR_FILE_TOO_LARGE)
   }
   const toUpload = await compressImage(file)
   const { error } = await supabase.storage

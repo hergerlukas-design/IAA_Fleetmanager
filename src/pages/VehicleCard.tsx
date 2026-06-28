@@ -5,7 +5,7 @@ import {
   ArrowLeft, Camera, Trash2, Plus, Lock, CheckCircle2,
   AlertCircle, Pencil, ChevronRight, Wrench,
 } from 'lucide-react'
-import { supabase, getPhotoUrl } from '@/lib/supabase'
+import { supabase, getPhotoUrl, ERR_FILE_TOO_LARGE } from '@/lib/supabase'
 import {
   fetchVehicle, updateVehicle, fetchVehiclePhotos,
   uploadVehiclePhoto, deleteVehiclePhoto, uploadSignature,
@@ -162,13 +162,11 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
   useEffect(() => {
     // Brand/Model suggestions
     supabase.from('vehicles').select('brand_model')
-      .then(({ data, error }) => {
-        console.log('[BasisdatenCard] brand_model fetch:', { data, error })
+      .then(({ data }) => {
         if (!data) return
         const unique = [...new Set(
           data.map((v: { brand_model: string | null }) => v.brand_model).filter((v): v is string => !!v)
         )].sort()
-        console.log('[BasisdatenCard] brandSuggestions:', unique)
         setBrandSuggestions(unique)
       })
 
@@ -357,7 +355,9 @@ function FotosCard({ vehicleId, vehicle, photos, locked, isAdmin, onRefresh }: {
       onRefresh()
     } catch (err) {
       console.error('Upload error:', err)
-      alert(t('errors.upload_failed') + '\n' + (err instanceof Error ? err.message : String(err)))
+      const raw = err instanceof Error ? err.message : String(err)
+      const msg = raw === ERR_FILE_TOO_LARGE ? t('errors.file_too_large') : raw
+      alert(t('errors.upload_failed') + '\n' + msg)
     } finally {
       setUploading(null)
     }
@@ -532,7 +532,9 @@ function SchadenCard({ vehicleId, damages, onRefresh }: {
       }, 800)
     } catch (err) {
       console.error('Save error:', err)
-      alert(t('errors.save_failed') + '\n' + (err instanceof Error ? err.message : String(err)))
+      const raw = err instanceof Error ? err.message : String(err)
+      const msg = raw === ERR_FILE_TOO_LARGE ? t('errors.file_too_large') : raw
+      alert(t('errors.save_failed') + '\n' + msg)
     } finally {
       setSaving(false)
     }

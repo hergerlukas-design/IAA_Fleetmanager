@@ -216,6 +216,7 @@
     "load_failed": "Failed to load.",
     "save_failed": "Failed to save.",
     "delete_failed": "Failed to delete.",
-    "upload_failed": "Upload failed."
+    "upload_failed": "Upload failed.",
+    "file_too_large": "File too large (max. 5 MB)."
   }
 }
