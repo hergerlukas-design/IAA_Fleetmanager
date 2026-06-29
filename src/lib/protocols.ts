@@ -63,3 +63,18 @@ export async function unlockAnnahme(id: string): Promise<IntakeProtocol> {
     annahme_confirmed_at: null,
   })
 }
+
+export async function confirmAnnahmeByVehicleId(vehicleId: string, confirmedBy: string): Promise<void> {
+  let proto = await fetchProtocol(vehicleId)
+  if (!proto) {
+    proto = await createProtocol(vehicleId, {})
+  }
+  await confirmAnnahme(proto.id, confirmedBy)
+  await supabase.from('vehicles').update({ status: 'abgeschlossen' }).eq('id', vehicleId)
+}
+
+export async function unlockAnnahmeByVehicleId(vehicleId: string): Promise<void> {
+  const proto = await fetchProtocol(vehicleId)
+  if (proto) await unlockAnnahme(proto.id)
+  await supabase.from('vehicles').update({ status: 'in_bearbeitung' }).eq('id', vehicleId)
+}

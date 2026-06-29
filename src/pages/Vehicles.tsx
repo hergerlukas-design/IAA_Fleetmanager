@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, Car, ArrowUpDown } from 'lucide-react'
+import { Plus, Search, Car, ArrowUpDown, Lock, X, CheckSquare } from 'lucide-react'
 import Layout from '@/components/Layout'
 import { useAuth } from '@/contexts/AuthContext'
-import { fetchVehicles, createVehicle } from '@/lib/vehicles'
+import { fetchVehicles } from '@/lib/vehicles'
+import { confirmAnnahmeByVehicleId } from '@/lib/protocols'
 import type { Vehicle } from '@/lib/types'
 import CreateVehicleSheet from './CreateVehicleSheet'
 
@@ -13,15 +14,121 @@ const STATUS_COLORS: Record<string, string> = {
   abgeschlossen:  'bg-emerald-100 text-emerald-700',
 }
 
+function VehicleRowItem({ vehicle: v, canConfirm, selectionMode, selected, confirming, onNavigate, onLongPress, onToggleSelect, onConfirm }: {
+  vehicle: Vehicle
+  canConfirm: boolean
+  selectionMode: boolean
+  selected: boolean
+  confirming: boolean
+  onNavigate: () => void
+  onLongPress?: () => void
+  onToggleSelect: () => void
+  onConfirm?: () => void
+}) {
+  const { t } = useTranslation()
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cancelled = useRef(false)
+
+  function handlePointerDown() {
+    if (selectionMode || !onLongPress) return
+    cancelled.current = false
+    longPressTimer.current = setTimeout(() => {
+      if (!cancelled.current) onLongPress()
+    }, 500)
+  }
+  function handlePointerUp() {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+  }
+  function handlePointerCancel() {
+    cancelled.current = true
+    handlePointerUp()
+  }
+  function handleClick() {
+    if (selectionMode) { onToggleSelect(); return }
+    onNavigate()
+  }
+
+  return (
+    <div className={`rounded-xl border overflow-hidden ${
+      selected ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' :
+      v.werkstatt ? 'bg-red-50 border-red-200' : 'bg-white border-gray-100'
+    }`}>
+      <button
+        onClick={handleClick}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerCancel}
+        onContextMenu={e => { e.preventDefault(); onLongPress?.() }}
+        className="w-full px-4 py-3 text-left flex items-center gap-3 hover:shadow-sm active:scale-[0.99] transition-all select-none"
+      >
+        {selectionMode ? (
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+            selected ? 'bg-blue-600' : 'bg-gray-100 border-2 border-gray-300'
+          }`}>
+            {selected && <CheckSquare size={20} className="text-white" />}
+          </div>
+        ) : (
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${v.werkstatt ? 'bg-red-100' : 'bg-gray-100'}`}>
+            <Car size={20} className={v.werkstatt ? 'text-red-400' : 'text-gray-400'} />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-900 truncate">
+            {v.license_plate || v.vin || '—'}
+          </p>
+          <p className="text-xs text-gray-400 truncate">
+            {v.brand_model || '—'} · {v.fleet?.name ?? t('vehicle_card.no_fleet')}
+          </p>
+        </div>
+        {!selectionMode && (
+          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            {v.werkstatt && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-600">
+                🔧 {t('status_section.werkstatt')}
+              </span>
+            )}
+            <div className="flex items-center gap-1">
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[v.status]}`}>
+                {t(`fleets.status.${v.status}`)}
+              </span>
+              {v.protocol_submitted && v.status === 'in_bearbeitung' && (
+                <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+              )}
+            </div>
+            {v.km != null && (
+              <span className="text-xs text-gray-400">{v.km.toLocaleString()} km</span>
+            )}
+          </div>
+        )}
+      </button>
+      {!selectionMode && onConfirm && (
+        <div className="px-4 pb-3">
+          <button
+            onClick={onConfirm}
+            disabled={confirming}
+            className="w-full py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+          >
+            {confirming ? t('common.loading') : <><Lock size={12} /> {t('protocol.annahme_confirm')}</>}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Vehicles() {
   const { t }       = useTranslation()
-  const { isUser, isAdmin } = useAuth()
+  const { isUser, isAdmin, userName } = useAuth()
   const navigate    = useNavigate()
   const [params]    = useSearchParams()
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [query, setQuery]       = useState('')
   const [onlyInBearbeitung, setOnlyInBearbeitung] = useState(false)
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkConfirming, setBulkConfirming] = useState(false)
   const [sortBy, setSortBy]     = useState<'plate' | 'newest'>('plate')
   const [loading, setLoading]   = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -37,6 +144,34 @@ export default function Vehicles() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  function enterSelectionMode(firstId: string) {
+    setSelectionMode(true)
+    setSelectedIds(new Set([firstId]))
+  }
+  function exitSelectionMode() {
+    setSelectionMode(false)
+    setSelectedIds(new Set())
+  }
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      if (next.size === 0) setSelectionMode(false)
+      return next
+    })
+  }
+  async function bulkConfirm() {
+    if (!confirm(t('protocol.annahme_confirm_dialog'))) return
+    setBulkConfirming(true)
+    try {
+      await Promise.all([...selectedIds].map(vid => confirmAnnahmeByVehicleId(vid, userName || '')))
+      exitSelectionMode()
+      await load()
+    } finally {
+      setBulkConfirming(false)
+    }
+  }
 
   const filtered = vehicles
     .filter((v) => {
@@ -59,10 +194,9 @@ export default function Vehicles() {
       return ka.localeCompare(kb, 'de', { numeric: true, sensitivity: 'base' })
     })
 
-  async function handleCreate(payload: Omit<Vehicle, 'id' | 'created_at' | 'fleet'>) {
-    const v = await createVehicle(payload)
+  function handleDone(vehicleId: string) {
     setShowCreate(false)
-    navigate(`/vehicle/${v.id}`)
+    navigate(`/vehicle/${vehicleId}`)
   }
 
   return (
@@ -127,45 +261,33 @@ export default function Vehicles() {
           </div>
         )}
 
-        {filtered.map((v) => (
-          <button
-            key={v.id}
-            onClick={() => navigate(`/vehicle/${v.id}`)}
-            className={`w-full rounded-xl border px-4 py-3 text-left flex items-center gap-3 hover:shadow-sm active:scale-[0.99] transition-all ${
-              v.werkstatt ? 'bg-red-50 border-red-200' : 'bg-white border-gray-100'
-            }`}
-          >
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${v.werkstatt ? 'bg-red-100' : 'bg-gray-100'}`}>
-              <Car size={20} className={v.werkstatt ? 'text-red-400' : 'text-gray-400'} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 truncate">
-                {v.license_plate || v.vin || '—'}
-              </p>
-              <p className="text-xs text-gray-400 truncate">
-                {v.brand_model || '—'} · {v.fleet?.name ?? t('vehicle_card.no_fleet')}
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
-              {v.werkstatt && (
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-600">
-                  🔧 {t('status_section.werkstatt')}
-                </span>
-              )}
-              <div className="flex items-center gap-1">
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[v.status]}`}>
-                  {t(`fleets.status.${v.status}`)}
-                </span>
-                {v.protocol_submitted && v.status === 'in_bearbeitung' && (
-                  <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
-                )}
-              </div>
-              {v.km != null && (
-                <span className="text-xs text-gray-400">{v.km.toLocaleString()} km</span>
-              )}
-            </div>
-          </button>
-        ))}
+        {filtered.map((v) => {
+          const canConfirm = isAdmin && v.status === 'in_bearbeitung' && !v.protocol_submitted
+          const isSelected = selectedIds.has(v.id)
+          return (
+            <VehicleRowItem
+              key={v.id}
+              vehicle={v}
+              canConfirm={canConfirm}
+              selectionMode={selectionMode}
+              selected={isSelected}
+              confirming={confirmingId === v.id}
+              onNavigate={() => navigate(`/vehicle/${v.id}`)}
+              onLongPress={canConfirm ? () => enterSelectionMode(v.id) : undefined}
+              onToggleSelect={() => toggleSelect(v.id)}
+              onConfirm={!selectionMode && canConfirm ? async () => {
+                if (!confirm(t('protocol.annahme_confirm_dialog'))) return
+                setConfirmingId(v.id)
+                try {
+                  await confirmAnnahmeByVehicleId(v.id, userName || '')
+                  await load()
+                } finally {
+                  setConfirmingId(null)
+                }
+              } : undefined}
+            />
+          )
+        })}
 
         {isUser && (
           <button
@@ -179,7 +301,25 @@ export default function Vehicles() {
       </div>
 
       {showCreate && (
-        <CreateVehicleSheet onSave={handleCreate} onClose={() => setShowCreate(false)} />
+        <CreateVehicleSheet onDone={handleDone} onClose={() => setShowCreate(false)} />
+      )}
+
+      {selectionMode && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg px-4 py-3 flex items-center gap-3 safe-bottom">
+          <button onClick={exitSelectionMode} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100">
+            <X size={20} />
+          </button>
+          <span className="flex-1 text-sm font-medium text-gray-700">
+            {selectedIds.size} {t('common.selected')}
+          </span>
+          <button
+            onClick={bulkConfirm}
+            disabled={bulkConfirming || selectedIds.size === 0}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+          >
+            {bulkConfirming ? t('common.loading') : <><Lock size={14} /> {t('protocol.annahme_confirm')}</>}
+          </button>
+        </div>
       )}
     </Layout>
   )

@@ -218,7 +218,8 @@
     "optional": "Optional",
     "yes": "Ja",
     "no": "Nein",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "selected": "ausgewählt"
   },
   "errors": {
     "load_failed": "Laden fehlgeschlagen.",
@@ -226,6 +227,20 @@
     "delete_failed": "Löschen fehlgeschlagen.",
     "upload_failed": "Upload fehlgeschlagen.",
     "file_too_large": "Datei zu gross (max. 5 MB)."
+  },
+  "create_wizard": {
+    "step_basisdaten": "Basisdaten",
+    "step_fotos": "Fotos",
+    "step_schaeden": "Schäden",
+    "next": "Weiter",
+    "back": "Zurück",
+    "done": "Fertig",
+    "no_damages": "Keine Schäden",
+    "add_damage": "Schaden hinzufügen",
+    "photos_hint": "Basisfotos der Fahrzeugkartei aufnehmen.",
+    "photos_count": "Foto(s)",
+    "step_protokoll": "Protokoll",
+    "protocol_hint": "Annahmeprotokoll ausfüllen und unterschreiben."
   },
   "update": {
     "available": "Neue Version verfügbar",

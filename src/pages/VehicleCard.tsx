@@ -14,6 +14,7 @@ import {
 import {
   fetchProtocol, createProtocol, updateProtocol,
   confirmAnnahme, unlockAnnahme,
+  confirmAnnahmeByVehicleId, unlockAnnahmeByVehicleId,
 } from '@/lib/protocols'
 import {
   fetchDamages, createDamage, updateDamage, deleteDamage,
@@ -685,7 +686,6 @@ function FahrzeugstatusCard({ vehicle, isAdmin, onUpdate, onKmChange }: {
   const [km,   setKm]   = useState(vehicle.km?.toString() ?? '')
   const [fuel, setFuel] = useState(vehicle.fuel?.toString() ?? '100')
   const [bat,  setBat]  = useState(vehicle.battery?.toString() ?? '0')
-  const [status, setStatus] = useState(vehicle.status)
   const [saving, setSaving] = useState(false)
   const [saved,  setSaved]  = useState(false)
   const [werkstattBusy, setWerkstattBusy] = useState(false)
@@ -694,7 +694,6 @@ function FahrzeugstatusCard({ vehicle, isAdmin, onUpdate, onKmChange }: {
     setKm(vehicle.km?.toString() ?? '')
     setFuel(vehicle.fuel?.toString() ?? '100')
     setBat(vehicle.battery?.toString() ?? '0')
-    setStatus(vehicle.status)
   }, [vehicle])
 
   async function toggleWerkstatt() {
@@ -715,7 +714,6 @@ function FahrzeugstatusCard({ vehicle, isAdmin, onUpdate, onKmChange }: {
       km:      newKm,
       fuel:    fuel ? parseInt(fuel) : null,
       battery: bat ? parseInt(bat) : null,
-      status,
     })
     setSaving(false)
     setSaved(true)
@@ -724,9 +722,6 @@ function FahrzeugstatusCard({ vehicle, isAdmin, onUpdate, onKmChange }: {
       onKmChange?.(newKm, oldKm)
     }
   }
-
-  // Status change only allowed for admin or in_bearbeitung vehicles
-  const canEditStatus = isAdmin || vehicle.status === 'in_bearbeitung'
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
@@ -747,24 +742,6 @@ function FahrzeugstatusCard({ vehicle, isAdmin, onUpdate, onKmChange }: {
 
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-2">
-          {/* Status — admin or in_bearbeitung only */}
-          {canEditStatus && (
-            <div className="col-span-3">
-              <Field label={t('vehicles.status')}>
-                <div className="flex gap-2">
-                  {(['in_bearbeitung', 'abgeschlossen'] as const).filter(s => isAdmin || s !== 'abgeschlossen').map(s => (
-                    <button key={s} type="button" onClick={() => setStatus(s)}
-                      className={`flex-1 py-2 rounded-xl text-xs font-medium border transition-colors ${
-                        status === s ? STATUS_COLORS[s] + ' border-current' : 'border-gray-200 text-gray-500'
-                      }`}>
-                      {t(`fleets.status.${s}`)}
-                    </button>
-                  ))}
-                </div>
-              </Field>
-            </div>
-          )}
-
           {/* KM */}
           <div className="col-span-3">
             <Field label={t('status_section.km')}>
@@ -807,10 +784,46 @@ function FahrzeugstatusCard({ vehicle, isAdmin, onUpdate, onKmChange }: {
   )
 }
 
+// ─── Annahme Action Card ─────────────────────────────────────────────────────
+
+function AnnahmeActionCard({ vehicleId, onRefresh }: {
+  vehicleId: string
+  vehicle: Vehicle
+  protocol: IntakeProtocol | null
+  isAdmin: boolean
+  onRefresh: () => void
+}) {
+  const { t }        = useTranslation()
+  const { userName } = useAuth()
+  const [busy, setBusy] = useState(false)
+
+  async function handleConfirm() {
+    if (!confirm(t('protocol.annahme_confirm_dialog'))) return
+    setBusy(true)
+    try {
+      await confirmAnnahmeByVehicleId(vehicleId, userName || '')
+      onRefresh()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-blue-200 shadow-sm p-4">
+      <button onClick={handleConfirm} disabled={busy}
+        className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+        {busy ? t('common.loading') : <><Lock size={15} /> {t('protocol.annahme_confirm')}</>}
+      </button>
+      <p className="text-xs text-gray-400 text-center mt-2">{t('protocol.annahme_confirm_hint')}</p>
+    </div>
+  )
+}
+
 // ─── Protokoll Card ───────────────────────────────────────────────────────────
 
-function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
+function ProtokollCard({ vehicleId, vehicle, protocol, vehicleKm, isAdmin, onRefresh }: {
   vehicleId: string
+  vehicle: Vehicle
   protocol: IntakeProtocol | null
   vehicleKm: number | null
   isAdmin: boolean
@@ -822,6 +835,7 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
   const isDrawing    = useRef(false)
   const lastPos      = useRef<{ x: number; y: number } | null>(null)
   const [hasStroke, setHasStroke] = useState(false)
+  const [annahmeBusy, setAnnahmeBusy] = useState(false)
 
   const confirmed = protocol?.annahme_confirmed ?? false
 
@@ -885,6 +899,28 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
     setHasStroke(false)
   }
 
+  async function handleConfirmAnnahme() {
+    if (!confirm(t('protocol.annahme_confirm_dialog'))) return
+    setAnnahmeBusy(true)
+    try {
+      await confirmAnnahmeByVehicleId(vehicleId, userName || '')
+      onRefresh()
+    } finally {
+      setAnnahmeBusy(false)
+    }
+  }
+
+  async function handleUnlockAnnahme() {
+    if (!confirm(t('protocol.annahme_unlock_confirm'))) return
+    setAnnahmeBusy(true)
+    try {
+      await unlockAnnahmeByVehicleId(vehicleId)
+      onRefresh()
+    } finally {
+      setAnnahmeBusy(false)
+    }
+  }
+
   async function save() {
     // Admin: Speichern = gleichzeitig Annahme bestätigen → Bestätigungsdialog
     if (isAdmin && !confirm(t('protocol.annahme_confirm_dialog'))) return
@@ -918,19 +954,12 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
     }
   }
 
-  async function handleUnlockAnnahme() {
-    if (!protocol) return
-    if (!confirm(t('protocol.annahme_unlock_confirm'))) return
-    await unlockAnnahme(protocol.id)
-    onRefresh()
-  }
-
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
       <SectionHeader title={t('protocol.title')} />
 
-      {/* Annahme confirmed banner */}
-      {confirmed && (
+      {/* Annahme status */}
+      {isAdmin && confirmed && (
         <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-4">
           <CheckCircle2 size={20} className="text-emerald-600 flex-shrink-0" />
           <div className="flex-1 min-w-0">
@@ -1059,14 +1088,12 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
         </div>
       )}
 
-      {/* Admin: Annahme entsperren */}
+      {/* Admin: unlock */}
       {isAdmin && confirmed && (
-        <div className="mt-3">
-          <button onClick={handleUnlockAnnahme}
-            className="w-full py-2 rounded-xl border border-red-200 text-red-500 text-xs font-medium hover:bg-red-50">
-            {t('protocol.annahme_unlock')}
-          </button>
-        </div>
+        <button onClick={handleUnlockAnnahme} disabled={annahmeBusy}
+          className="w-full mt-3 py-2 rounded-xl border border-red-200 text-red-500 text-xs font-medium hover:bg-red-50 disabled:opacity-50">
+          {t('protocol.annahme_unlock')}
+        </button>
       )}
     </div>
   )
@@ -1191,29 +1218,38 @@ export default function VehicleCard() {
         <HeroCard vehicle={vehicle} photos={photos} />
 
         {isAdmin ? (
-          // Admin: Basisdaten → Fotos → Schäden → Status → Protokoll
+          // Admin: Confirm button → Basisdaten → Fotos → Schäden → (Status after confirmed) → Protokoll
           <>
+            {!locked && vehicle.status === 'in_bearbeitung' && (
+              <AnnahmeActionCard vehicleId={id!} vehicle={vehicle} protocol={protocol} isAdmin={isAdmin} onRefresh={loadAll} />
+            )}
             <BasisdatenCard vehicle={vehicle} fleets={fleets} locked={locked} isAdmin={isAdmin} onUpdate={handleVehicleUpdate} />
             <FotosCard vehicleId={id!} vehicle={vehicle} photos={photos} locked={locked} isAdmin={isAdmin}
               onRefresh={() => fetchVehiclePhotos(id!).then(setPhotos)} />
             <SchadenCard vehicleId={id!} damages={damages}
               onRefresh={() => fetchDamages(id!).then(setDamages)} />
-            <FahrzeugstatusCard vehicle={vehicle} isAdmin={isAdmin} onUpdate={handleVehicleUpdate}
-              onKmChange={(newKm, oldKm) => setPendingKmChange({ newKm, oldKm })} />
-            <KmHistoryCard vehicleId={id!} vehicleLabel={vehicle.license_plate || vehicle.vin || ''} pdfOnly />
-            <ProtokollCard vehicleId={id!} protocol={protocol} vehicleKm={vehicle.km ?? null} isAdmin={isAdmin} onRefresh={loadAll} />
+            {locked && (
+              <>
+                <FahrzeugstatusCard vehicle={vehicle} isAdmin={isAdmin} onUpdate={handleVehicleUpdate}
+                  onKmChange={(newKm, oldKm) => setPendingKmChange({ newKm, oldKm })} />
+                <KmHistoryCard vehicleId={id!} vehicleLabel={vehicle.license_plate || vehicle.vin || ''} pdfOnly />
+              </>
+            )}
+            <ProtokollCard vehicleId={id!} vehicle={vehicle} protocol={protocol} vehicleKm={vehicle.km ?? null} isAdmin={isAdmin} onRefresh={loadAll} />
           </>
         ) : (
-          // User: Schäden → Status → Fotos → Basisdaten → Protokoll
+          // User: Schäden → (Status after confirmed) → Fotos → Basisdaten → Protokoll
           <>
             <SchadenCard vehicleId={id!} damages={damages}
               onRefresh={() => fetchDamages(id!).then(setDamages)} />
-            <FahrzeugstatusCard vehicle={vehicle} isAdmin={isAdmin} onUpdate={handleVehicleUpdate}
-              onKmChange={(newKm, oldKm) => setPendingKmChange({ newKm, oldKm })} />
+            {locked && (
+              <FahrzeugstatusCard vehicle={vehicle} isAdmin={isAdmin} onUpdate={handleVehicleUpdate}
+                onKmChange={(newKm, oldKm) => setPendingKmChange({ newKm, oldKm })} />
+            )}
             <FotosCard vehicleId={id!} vehicle={vehicle} photos={photos} locked={locked} isAdmin={isAdmin}
               onRefresh={() => fetchVehiclePhotos(id!).then(setPhotos)} />
             <BasisdatenCard vehicle={vehicle} fleets={fleets} locked={locked} isAdmin={isAdmin} onUpdate={handleVehicleUpdate} />
-            <ProtokollCard vehicleId={id!} protocol={protocol} vehicleKm={vehicle.km ?? null} isAdmin={isAdmin} onRefresh={loadAll} />
+            <ProtokollCard vehicleId={id!} vehicle={vehicle} protocol={protocol} vehicleKm={vehicle.km ?? null} isAdmin={isAdmin} onRefresh={loadAll} />
           </>
         )}
       </main>

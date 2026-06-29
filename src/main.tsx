@@ -47,4 +47,8 @@ function Root() {
   )
 }
 
-createRoot(document.getElementById('root')!).render(<Root />)
+const container = document.getElementById('root')!
+if (!container.hasAttribute('data-mounted')) {
+  container.setAttribute('data-mounted', '')
+  createRoot(container).render(<Root />)
+}

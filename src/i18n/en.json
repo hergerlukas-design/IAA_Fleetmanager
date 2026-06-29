@@ -218,7 +218,8 @@
     "optional": "Optional",
     "yes": "Yes",
     "no": "No",
-    "retry": "Try again"
+    "retry": "Try again",
+    "selected": "selected"
   },
   "errors": {
     "load_failed": "Failed to load.",
@@ -226,6 +227,20 @@
     "delete_failed": "Failed to delete.",
     "upload_failed": "Upload failed.",
     "file_too_large": "File too large (max. 5 MB)."
+  },
+  "create_wizard": {
+    "step_basisdaten": "Details",
+    "step_fotos": "Photos",
+    "step_schaeden": "Damage",
+    "next": "Next",
+    "back": "Back",
+    "done": "Done",
+    "no_damages": "No Damages",
+    "add_damage": "Add Damage",
+    "photos_hint": "Take the base photos for the vehicle file.",
+    "photos_count": "photo(s)",
+    "step_protokoll": "Protocol",
+    "protocol_hint": "Fill in the intake protocol and sign."
   },
   "update": {
     "available": "New version available",
