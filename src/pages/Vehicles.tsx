@@ -14,9 +14,8 @@ const STATUS_COLORS: Record<string, string> = {
   abgeschlossen:  'bg-emerald-100 text-emerald-700',
 }
 
-function VehicleRowItem({ vehicle: v, canConfirm, selectionMode, selected, confirming, onNavigate, onLongPress, onToggleSelect, onConfirm }: {
+function VehicleRowItem({ vehicle: v, selectionMode, selected, confirming, onNavigate, onLongPress, onToggleSelect, onConfirm }: {
   vehicle: Vehicle
-  canConfirm: boolean
   selectionMode: boolean
   selected: boolean
   confirming: boolean
@@ -268,7 +267,6 @@ export default function Vehicles() {
             <VehicleRowItem
               key={v.id}
               vehicle={v}
-              canConfirm={canConfirm}
               selectionMode={selectionMode}
               selected={isSelected}
               confirming={confirmingId === v.id}

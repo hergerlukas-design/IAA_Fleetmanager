@@ -13,7 +13,7 @@ import {
 } from '@/lib/vehicles'
 import {
   fetchProtocol, createProtocol, updateProtocol,
-  confirmAnnahme, unlockAnnahme,
+  confirmAnnahme,
   confirmAnnahmeByVehicleId, unlockAnnahmeByVehicleId,
 } from '@/lib/protocols'
 import {
@@ -676,9 +676,8 @@ function SchadenCard({ vehicleId, damages, onRefresh }: {
 
 // ─── Fahrzeugstatus Card ──────────────────────────────────────────────────────
 
-function FahrzeugstatusCard({ vehicle, isAdmin, onUpdate, onKmChange }: {
+function FahrzeugstatusCard({ vehicle, onUpdate, onKmChange }: {
   vehicle: Vehicle
-  isAdmin: boolean
   onUpdate: (p: Partial<Vehicle>) => Promise<void>
   onKmChange?: (newKm: number, oldKm: number | null) => void
 }) {
@@ -788,9 +787,6 @@ function FahrzeugstatusCard({ vehicle, isAdmin, onUpdate, onKmChange }: {
 
 function AnnahmeActionCard({ vehicleId, onRefresh }: {
   vehicleId: string
-  vehicle: Vehicle
-  protocol: IntakeProtocol | null
-  isAdmin: boolean
   onRefresh: () => void
 }) {
   const { t }        = useTranslation()
@@ -821,9 +817,8 @@ function AnnahmeActionCard({ vehicleId, onRefresh }: {
 
 // ─── Protokoll Card ───────────────────────────────────────────────────────────
 
-function ProtokollCard({ vehicleId, vehicle, protocol, vehicleKm, isAdmin, onRefresh }: {
+function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
   vehicleId: string
-  vehicle: Vehicle
   protocol: IntakeProtocol | null
   vehicleKm: number | null
   isAdmin: boolean
@@ -897,17 +892,6 @@ function ProtokollCard({ vehicleId, vehicle, protocol, vehicleKm, isAdmin, onRef
     if (!c) return
     c.getContext('2d')!.clearRect(0, 0, c.width, c.height)
     setHasStroke(false)
-  }
-
-  async function handleConfirmAnnahme() {
-    if (!confirm(t('protocol.annahme_confirm_dialog'))) return
-    setAnnahmeBusy(true)
-    try {
-      await confirmAnnahmeByVehicleId(vehicleId, userName || '')
-      onRefresh()
-    } finally {
-      setAnnahmeBusy(false)
-    }
   }
 
   async function handleUnlockAnnahme() {
@@ -1221,7 +1205,7 @@ export default function VehicleCard() {
           // Admin: Confirm button → Basisdaten → Fotos → Schäden → (Status after confirmed) → Protokoll
           <>
             {!locked && vehicle.status === 'in_bearbeitung' && (
-              <AnnahmeActionCard vehicleId={id!} vehicle={vehicle} protocol={protocol} isAdmin={isAdmin} onRefresh={loadAll} />
+              <AnnahmeActionCard vehicleId={id!} onRefresh={loadAll} />
             )}
             <BasisdatenCard vehicle={vehicle} fleets={fleets} locked={locked} isAdmin={isAdmin} onUpdate={handleVehicleUpdate} />
             <FotosCard vehicleId={id!} vehicle={vehicle} photos={photos} locked={locked} isAdmin={isAdmin}
@@ -1230,12 +1214,12 @@ export default function VehicleCard() {
               onRefresh={() => fetchDamages(id!).then(setDamages)} />
             {locked && (
               <>
-                <FahrzeugstatusCard vehicle={vehicle} isAdmin={isAdmin} onUpdate={handleVehicleUpdate}
+                <FahrzeugstatusCard vehicle={vehicle} onUpdate={handleVehicleUpdate}
                   onKmChange={(newKm, oldKm) => setPendingKmChange({ newKm, oldKm })} />
                 <KmHistoryCard vehicleId={id!} vehicleLabel={vehicle.license_plate || vehicle.vin || ''} pdfOnly />
               </>
             )}
-            <ProtokollCard vehicleId={id!} vehicle={vehicle} protocol={protocol} vehicleKm={vehicle.km ?? null} isAdmin={isAdmin} onRefresh={loadAll} />
+            <ProtokollCard vehicleId={id!} protocol={protocol} vehicleKm={vehicle.km ?? null} isAdmin={isAdmin} onRefresh={loadAll} />
           </>
         ) : (
           // User: Schäden → (Status after confirmed) → Fotos → Basisdaten → Protokoll
@@ -1243,13 +1227,13 @@ export default function VehicleCard() {
             <SchadenCard vehicleId={id!} damages={damages}
               onRefresh={() => fetchDamages(id!).then(setDamages)} />
             {locked && (
-              <FahrzeugstatusCard vehicle={vehicle} isAdmin={isAdmin} onUpdate={handleVehicleUpdate}
+              <FahrzeugstatusCard vehicle={vehicle} onUpdate={handleVehicleUpdate}
                 onKmChange={(newKm, oldKm) => setPendingKmChange({ newKm, oldKm })} />
             )}
             <FotosCard vehicleId={id!} vehicle={vehicle} photos={photos} locked={locked} isAdmin={isAdmin}
               onRefresh={() => fetchVehiclePhotos(id!).then(setPhotos)} />
             <BasisdatenCard vehicle={vehicle} fleets={fleets} locked={locked} isAdmin={isAdmin} onUpdate={handleVehicleUpdate} />
-            <ProtokollCard vehicleId={id!} vehicle={vehicle} protocol={protocol} vehicleKm={vehicle.km ?? null} isAdmin={isAdmin} onRefresh={loadAll} />
+            <ProtokollCard vehicleId={id!} protocol={protocol} vehicleKm={vehicle.km ?? null} isAdmin={isAdmin} onRefresh={loadAll} />
           </>
         )}
       </main>

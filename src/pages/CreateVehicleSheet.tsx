@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { X, Camera, Trash2, Plus, Check, ChevronRight, ChevronLeft, FileText } from 'lucide-react'
+import { X, Camera, Trash2, Plus, Check, ChevronRight, ChevronLeft } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchActiveFleets } from '@/lib/fleets'
 import { createVehicle, uploadVehiclePhoto, uploadSignature } from '@/lib/vehicles'
@@ -53,7 +53,7 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
   const vinInputRef = useRef<HTMLInputElement>(null)
 
   // ── Step 2: Fotos ──────────────────────────────────────────────────────────
-  const [uploading, setUploading]   = useState<string | null>(null)
+  const [uploading]   = useState<string | null>(null)
   const [photoFiles, setPhotoFiles] = useState<Record<string, File>>({})
   const photoUrls = useMemo(() => {
     const urls: Record<string, string> = {}
