@@ -471,9 +471,11 @@ function DamageRow({ damage: d, onDelete }: {
                 </span>
               )}
             </div>
-            {d.position && (
+            {(d.position || d.created_at) && (
               <p className="text-xs text-gray-400 mt-0.5 truncate">
-                {isEn ? (ZONE_LABEL_EN[d.position] ?? d.position) : d.position}
+                {d.position && (isEn ? (ZONE_LABEL_EN[d.position] ?? d.position) : d.position)}
+                {d.position && d.created_at && ' · '}
+                {d.created_at && new Date(d.created_at).toLocaleDateString('de-CH')}
               </p>
             )}
           </div>
