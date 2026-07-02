@@ -152,6 +152,9 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
     vin:           vehicle.vin ?? '',
     brand_model:   vehicle.brand_model ?? '',
     fleet_id:      vehicle.fleet_id ?? '',
+    km:            vehicle.km?.toString() ?? '',
+    fuel:          vehicle.fuel?.toString() ?? '100',
+    battery:       vehicle.battery?.toString() ?? '0',
     notes:         vehicle.notes ?? '',
   })
   const [saving, setSaving] = useState(false)
@@ -210,6 +213,9 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
       vin:           vehicle.vin ?? '',
       brand_model:   vehicle.brand_model ?? '',
       fleet_id:      vehicle.fleet_id ?? '',
+      km:            vehicle.km?.toString() ?? '',
+      fuel:          vehicle.fuel?.toString() ?? '100',
+      battery:       vehicle.battery?.toString() ?? '0',
       notes:         vehicle.notes ?? '',
     })
   }, [vehicle])
@@ -223,6 +229,9 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
       vin:           form.vin || null,
       brand_model:   form.brand_model || null,
       fleet_id:      form.fleet_id || null,
+      km:            form.km ? parseInt(form.km) : null,
+      fuel:          form.fuel ? parseInt(form.fuel) : null,
+      battery:       form.battery ? parseInt(form.battery) : null,
       notes:         form.notes || null,
     })
     setSaving(false)
@@ -247,6 +256,9 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
             [t('vehicles.license_plate'), vehicle.license_plate],
             [t('vehicles.vin'),           vehicle.vin],
             [t('vehicles.brand_model'),   vehicle.brand_model],
+            [t('vehicles.km'),            vehicle.km != null ? `${vehicle.km.toLocaleString()} km` : null],
+            [t('vehicles.fuel'),          vehicle.fuel != null ? `${vehicle.fuel}%` : null],
+            [t('vehicles.battery'),       vehicle.battery ? `${vehicle.battery}%` : null],
             [t('vehicles.fleet'),         vehicle.fleet?.name],
             [t('vehicles.notes'),         vehicle.notes],
           ].map(([label, val]) => val ? (
@@ -312,6 +324,24 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
                 }
               </div>
             )}
+          </Field>
+          <Field label={t('vehicles.km')}>
+            <div className="flex gap-2 items-center">
+              <input type="number" inputMode="numeric" value={form.km}
+                onChange={e => f('km', e.target.value)}
+                className="flex-1 px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
+              <span className="text-sm text-gray-400 flex-shrink-0">km</span>
+            </div>
+          </Field>
+          <Field label={`${t('vehicles.fuel')} — ${form.fuel}%`}>
+            <input type="range" min="0" max="100" step="5" value={form.fuel}
+              onChange={e => f('fuel', e.target.value)}
+              className="w-full accent-blue-600" />
+          </Field>
+          <Field label={`${t('vehicles.battery')} — ${form.battery}%`}>
+            <input type="range" min="0" max="100" step="5" value={form.battery}
+              onChange={e => f('battery', e.target.value)}
+              className="w-full accent-green-500" />
           </Field>
           <Field label={t('vehicles.notes')}>
             <textarea value={form.notes} onChange={e => f('notes', e.target.value)} rows={2}
@@ -926,6 +956,7 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
       // Admin: Annahme direkt beim Speichern bestätigen
       if (isAdmin) {
         await confirmAnnahme(saved.id, userName)
+        await supabase.from('vehicles').update({ status: 'abgeschlossen' }).eq('id', vehicleId)
         // Write starting km entry at intake confirmation
         if (vehicleKm != null) {
           try {
@@ -1224,17 +1255,17 @@ export default function VehicleCard() {
             <ProtokollCard vehicleId={id!} protocol={protocol} vehicleKm={vehicle.km ?? null} isAdmin={isAdmin} onRefresh={loadAll} />
           </>
         ) : (
-          // User: Schäden → (Status after confirmed) → Fotos → Basisdaten → Protokoll
+          // User: Basisdaten → (Status after confirmed) → Schäden → Fotos → Protokoll
           <>
-            <SchadenCard vehicleId={id!} damages={damages}
-              onRefresh={() => fetchDamages(id!).then(setDamages)} />
+            <BasisdatenCard vehicle={vehicle} fleets={fleets} locked={locked} isAdmin={isAdmin} onUpdate={handleVehicleUpdate} />
             {locked && (
               <FahrzeugstatusCard vehicle={vehicle} onUpdate={handleVehicleUpdate}
                 onKmChange={(newKm, oldKm) => setPendingKmChange({ newKm, oldKm })} />
             )}
+            <SchadenCard vehicleId={id!} damages={damages}
+              onRefresh={() => fetchDamages(id!).then(setDamages)} />
             <FotosCard vehicleId={id!} vehicle={vehicle} photos={photos} locked={locked} isAdmin={isAdmin}
               onRefresh={() => fetchVehiclePhotos(id!).then(setPhotos)} />
-            <BasisdatenCard vehicle={vehicle} fleets={fleets} locked={locked} isAdmin={isAdmin} onUpdate={handleVehicleUpdate} />
             <ProtokollCard vehicleId={id!} protocol={protocol} vehicleKm={vehicle.km ?? null} isAdmin={isAdmin} onRefresh={loadAll} />
           </>
         )}
