@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
 import { fetchZweckSuggestions, createKmEntry } from '@/lib/kmHistory'
 import { updateVehicle } from '@/lib/vehicles'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/useAuth'
 import type { Vehicle } from '@/lib/types'
 
 interface Props {

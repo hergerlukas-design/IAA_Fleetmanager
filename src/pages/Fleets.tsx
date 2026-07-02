@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus, ChevronRight, Car, RefreshCw } from 'lucide-react'
 import Layout from '@/components/Layout'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/useAuth'
 import { fetchActiveFleets, fetchFleetVehicleCounts } from '@/lib/fleets'
 import type { Fleet } from '@/lib/types'
 
@@ -97,7 +97,9 @@ export default function Fleets() {
     }
   }, [t])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    void (async () => { await load() })()
+  }, [load])
 
   const totalVehicles = Object.values(counts).reduce((s, c) => s + c.total, 0)
 

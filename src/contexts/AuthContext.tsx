@@ -1,16 +1,6 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { getStoredAuth, getStoredName, setStoredAuth, setStoredName, type AuthLevel } from '@/lib/auth'
-
-interface AuthContextValue {
-  authLevel: AuthLevel
-  userName: string
-  login: (level: AuthLevel, name: string) => void
-  logout: () => void
-  isUser: boolean
-  isAdmin: boolean
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null)
+import { AuthContext } from './useAuth'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authLevel, setAuthLevel] = useState<AuthLevel>(getStoredAuth)
@@ -42,10 +32,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
-  return ctx
 }

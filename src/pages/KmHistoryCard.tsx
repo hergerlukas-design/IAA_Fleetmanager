@@ -24,11 +24,17 @@ export default function KmHistoryCard({ vehicleId, vehicleLabel, pdfOnly = false
   // Normal mode: fetch on first open only
   useEffect(() => {
     if (!pdfOnly && open && !fetched) {
-      setLoading(true)
-      fetchKmHistory(vehicleId)
-        .then(data => { setEntries(data); setFetched(true) })
-        .catch(() => {})
-        .finally(() => setLoading(false))
+      void (async () => {
+        setLoading(true)
+        try {
+          const data = await fetchKmHistory(vehicleId)
+          setEntries(data)
+          setFetched(true)
+        } catch { /* silent */
+        } finally {
+          setLoading(false)
+        }
+      })()
     }
   }, [open, pdfOnly, vehicleId, fetched])
 

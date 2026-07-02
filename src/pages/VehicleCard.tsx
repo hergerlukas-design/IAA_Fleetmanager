@@ -23,7 +23,7 @@ import {
 } from '@/lib/damages'
 import { createKmEntry } from '@/lib/kmHistory'
 import { fetchActiveFleets } from '@/lib/fleets'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/useAuth'
 import CarDamageSelector from '@/components/CarDamageSelector'
 import KmLogSheet from '@/pages/KmLogSheet'
 import KmHistoryCard from '@/pages/KmHistoryCard'
@@ -207,7 +207,9 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
       })
   }, []) // run once on mount
 
-  useEffect(() => {
+  const [prevVehicle, setPrevVehicle] = useState(vehicle)
+  if (vehicle !== prevVehicle) {
+    setPrevVehicle(vehicle)
     setForm({
       license_plate: vehicle.license_plate ?? '',
       vin:           vehicle.vin ?? '',
@@ -218,7 +220,7 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
       battery:       vehicle.battery?.toString() ?? '0',
       notes:         vehicle.notes ?? '',
     })
-  }, [vehicle])
+  }
 
   const f = (k: keyof typeof form, v: string) => setForm(p => ({ ...p, [k]: v }))
 
@@ -721,11 +723,13 @@ function FahrzeugstatusCard({ vehicle, onUpdate, onKmChange }: {
   const [saved,  setSaved]  = useState(false)
   const [werkstattBusy, setWerkstattBusy] = useState(false)
 
-  useEffect(() => {
+  const [prevVehicle, setPrevVehicle] = useState(vehicle)
+  if (vehicle !== prevVehicle) {
+    setPrevVehicle(vehicle)
     setKm(vehicle.km?.toString() ?? '')
     setFuel(vehicle.fuel?.toString() ?? '100')
     setBat(vehicle.battery?.toString() ?? '0')
-  }, [vehicle])
+  }
 
   async function toggleWerkstatt() {
     setWerkstattBusy(true)
@@ -875,7 +879,11 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
   })
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
+  const [prevProtocol, setPrevProtocol] = useState(protocol)
+  const [prevUserName, setPrevUserName] = useState(userName)
+  if (protocol !== prevProtocol || userName !== prevUserName) {
+    setPrevProtocol(protocol)
+    setPrevUserName(userName)
     setForm({
       inspector_name: protocol?.inspector_name ?? userName,
       location:       protocol?.location ?? '',
@@ -883,7 +891,7 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
       notes:          protocol?.notes ?? '',
     })
     setEditing(!protocol)
-  }, [protocol, userName])
+  }
 
   function getPos(e: React.MouseEvent | React.TouchEvent) {
     const canvas = canvasRef.current!
@@ -1150,7 +1158,9 @@ export default function VehicleCard() {
     }
   }, [id])
 
-  useEffect(() => { loadAll() }, [loadAll])
+  useEffect(() => {
+    void (async () => { await loadAll() })()
+  }, [loadAll])
 
   // Realtime: reload on changes from other users
   useEffect(() => {

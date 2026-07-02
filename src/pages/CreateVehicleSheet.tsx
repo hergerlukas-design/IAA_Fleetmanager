@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X, Camera, Trash2, Plus, Check, ChevronRight, ChevronLeft } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/useAuth'
 import { fetchActiveFleets } from '@/lib/fleets'
 import { createVehicle, uploadVehiclePhoto, uploadSignature } from '@/lib/vehicles'
 import {

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus, Search, Car, ArrowUpDown, Lock, X, CheckSquare } from 'lucide-react'
 import Layout from '@/components/Layout'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/useAuth'
 import { fetchVehicles } from '@/lib/vehicles'
 import { confirmAnnahmeByVehicleId } from '@/lib/protocols'
 import type { Vehicle } from '@/lib/types'
@@ -142,7 +142,9 @@ export default function Vehicles() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    void (async () => { await load() })()
+  }, [load])
 
   function enterSelectionMode(firstId: string) {
     setSelectionMode(true)

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Globe, Download, Layers, Plus, Pencil, Trash2, X, Check, MessageSquare, ChevronDown, RefreshCw } from 'lucide-react'
 import Layout from '@/components/Layout'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/useAuth'
 import { fetchFleets, createFleet, updateFleet, deleteFleet, FLEET_COLORS } from '@/lib/fleets'
 import { fetchVehicles } from '@/lib/vehicles'
 import { fetchDamages } from '@/lib/damages'
@@ -119,7 +119,9 @@ export default function Settings() {
     setFleets(data)
   }, [])
 
-  useEffect(() => { loadFleets() }, [loadFleets])
+  useEffect(() => {
+    void (async () => { await loadFleets() })()
+  }, [loadFleets])
 
   // Lazy load feedback list for admins
   useEffect(() => {
