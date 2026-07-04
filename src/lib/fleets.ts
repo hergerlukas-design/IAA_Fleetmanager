@@ -16,6 +16,16 @@ export async function fetchFleets(): Promise<Fleet[]> {
   return data ?? []
 }
 
+export async function fetchFleet(id: string): Promise<Fleet | null> {
+  const { data, error } = await supabase
+    .from('fleets')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
 export async function fetchActiveFleets(): Promise<Fleet[]> {
   const { data, error } = await supabase
     .from('fleets')

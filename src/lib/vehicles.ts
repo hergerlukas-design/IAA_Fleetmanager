@@ -65,6 +65,22 @@ export async function updateVehicle(id: string, payload: Partial<Omit<Vehicle, '
 export async function deleteVehicle(id: string): Promise<void> {
   const { error } = await supabase.from('vehicles').delete().eq('id', id)
   if (error) throw error
+  // Storage-Reste (Fotos, Schadensbilder, Signatur) dürfen das Löschen nicht blockieren
+  await deleteVehicleStorage(id).catch(() => {})
+}
+
+async function deleteVehicleStorage(vehicleId: string): Promise<void> {
+  const storage = supabase.storage.from(STORAGE_BUCKET)
+  const prefixes = [`vehicles/${vehicleId}`, `vehicles/${vehicleId}/damages`]
+  const paths: string[] = []
+  for (const prefix of prefixes) {
+    const { data } = await storage.list(prefix, { limit: 1000 })
+    for (const entry of data ?? []) {
+      // Ordner-Einträge haben id === null, nur echte Dateien löschen
+      if (entry.id) paths.push(`${prefix}/${entry.name}`)
+    }
+  }
+  if (paths.length > 0) await storage.remove(paths)
 }
 
 // ─── Photos ─────────────────────────────────────────────────────────────────

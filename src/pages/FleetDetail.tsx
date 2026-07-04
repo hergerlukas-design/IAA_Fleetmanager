@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Plus, Search, Car, ArrowUpDown, Gauge, ChevronDown, FileText, Lock, X, CheckSquare } from 'lucide-react'
 import Layout from '@/components/Layout'
 import { useAuth } from '@/contexts/useAuth'
-import { fetchActiveFleets } from '@/lib/fleets'
+import { fetchFleet } from '@/lib/fleets'
 import { fetchVehicles } from '@/lib/vehicles'
 import { confirmAnnahmeByVehicleId } from '@/lib/protocols'
 import { fetchFleetKmSummary, fetchAllFleetKmEntries } from '@/lib/kmHistory'
@@ -185,11 +185,11 @@ export default function FleetDetail() {
     if (!id) return
     setLoading(true)
     try {
-      const [fleets, veh] = await Promise.all([
-        fetchActiveFleets(),
+      const [f, veh] = await Promise.all([
+        fetchFleet(id),
         fetchVehicles(id),
       ])
-      setFleet(fleets.find((f) => f.id === id) ?? null)
+      setFleet(f)
       setVehicles(veh)
     } finally {
       setLoading(false)
