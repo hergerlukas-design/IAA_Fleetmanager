@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Globe, Download, Layers, Plus, Pencil, Trash2, X, Check, MessageSquare, ChevronDown, RefreshCw } from 'lucide-react'
 import Layout from '@/components/Layout'
+import Modal from '@/components/Modal'
 import { useAuth } from '@/contexts/useAuth'
 import { fetchFleets, createFleet, updateFleet, deleteFleet, FLEET_COLORS } from '@/lib/fleets'
 import { fetchVehicles } from '@/lib/vehicles'
@@ -46,51 +47,48 @@ function FleetForm({ initial, onSave, onClose }: {
   }
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">
-            {initial ? t('fleets.edit') : t('fleets.add')}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X size={22} /></button>
+    <Modal onClose={onClose} className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-gray-900">
+          {initial ? t('fleets.edit') : t('fleets.add')}
+        </h2>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X size={22} /></button>
+      </div>
+
+      {error && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm">{error}</div>}
+
+      <form onSubmit={submit} className="space-y-4 pb-[env(safe-area-inset-bottom)]">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('fleets.name')}</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400" />
         </div>
 
-        {error && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm">{error}</div>}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('fleets.description')}</label>
+          <input type="text" value={desc} onChange={(e) => setDesc(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400" />
+        </div>
 
-        <form onSubmit={submit} className="space-y-4 pb-[env(safe-area-inset-bottom)]">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('fleets.name')}</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400" />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">{t('fleets.color')}</label>
+          <div className="flex gap-2 flex-wrap">
+            {FLEET_COLORS.map((c) => (
+              <button key={c} type="button" onClick={() => setColor(c)}
+                className="w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all"
+                style={{ backgroundColor: c, borderColor: color === c ? '#1d4ed8' : 'transparent' }}>
+                {color === c && <Check size={14} className="text-white" />}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('fleets.description')}</label>
-            <input type="text" value={desc} onChange={(e) => setDesc(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{t('fleets.color')}</label>
-            <div className="flex gap-2 flex-wrap">
-              {FLEET_COLORS.map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all"
-                  style={{ backgroundColor: c, borderColor: color === c ? '#1d4ed8' : 'transparent' }}>
-                  {color === c && <Check size={14} className="text-white" />}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button type="submit" disabled={saving}
-            className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold disabled:opacity-50">
-            {saving ? t('common.loading') : t('common.save')}
-          </button>
-        </form>
-      </div>
-    </>
+        <button type="submit" disabled={saving}
+          className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold disabled:opacity-50">
+          {saving ? t('common.loading') : t('common.save')}
+        </button>
+      </form>
+    </Modal>
   )
 }
 

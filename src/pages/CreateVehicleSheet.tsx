@@ -11,6 +11,7 @@ import {
 import { createProtocol } from '@/lib/protocols'
 import { supabase, ERR_FILE_TOO_LARGE } from '@/lib/supabase'
 import CarDamageSelector from '@/components/CarDamageSelector'
+import Modal from '@/components/Modal'
 import type { Fleet, VehiclePhoto } from '@/lib/types'
 
 interface Props {
@@ -284,414 +285,411 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <>
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={step === 1 ? onClose : undefined} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[90dvh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 z-10">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-gray-900">{t('vehicles.add')}</h2>
-            <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700">
-              <X size={22} />
-            </button>
-          </div>
-
-          {/* Stepper */}
-          <div className="flex items-center justify-center gap-2">
-            {STEPS.map((s, i) => {
-              const stepNum = (i + 1) as 1 | 2 | 3 | 4
-              const done = step > stepNum
-              const active = step === stepNum
-              const canGoBack = done && !saving && !finishing
-              return (
-                <div key={s.key} className="flex items-center gap-2">
-                  {i > 0 && (
-                    <div className={`w-8 h-0.5 rounded-full transition-colors ${done ? 'bg-blue-500' : 'bg-gray-200'}`} />
-                  )}
-                  <button
-                    type="button"
-                    disabled={!canGoBack}
-                    onClick={() => canGoBack && setStep(stepNum)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                      done ? 'bg-blue-100 text-blue-700 cursor-pointer hover:bg-blue-200' :
-                      active ? 'bg-blue-600 text-white cursor-default' :
-                      'bg-gray-100 text-gray-400 cursor-default'
-                    }`}>
-                    {done ? <Check size={12} /> : <span>{s.icon}</span>}
-                    <span className="hidden sm:inline">{t(`create_wizard.step_${s.key}`)}</span>
-                  </button>
-                </div>
-              )
-            })}
-          </div>
+    <Modal onClose={onClose} closeOnBackdrop={step === 1}>
+      {/* Header */}
+      <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 z-10">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold text-gray-900">{t('vehicles.add')}</h2>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700">
+            <X size={22} />
+          </button>
         </div>
 
-        <div className="px-4 py-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm mb-4">{error}</div>
-          )}
-
-          {/* ── STEP 1: Basisdaten ─────────────────────────────────────────── */}
-          {step === 1 && (
-            <div className="space-y-4">
-              {/* Fleet */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('vehicles.fleet')}</label>
-                <select value={fleetId} onChange={(e) => setFleetId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-blue-400">
-                  <option value="">{t('vehicle_card.no_fleet')}</option>
-                  {fleets.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-                </select>
-              </div>
-
-              {/* License Plate */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('vehicles.license_plate')}</label>
-                <input type="text" value={licensePlate} onChange={(e) => setLicensePlate(e.target.value.toUpperCase())}
-                  placeholder="AB CD 1234"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400 font-mono uppercase" />
-              </div>
-
-              {/* VIN */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('vehicles.vin')}</label>
-                {vinPrefixes.length > 0 && !vin && (
-                  <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                    <span className="text-xs text-gray-400">Präfix:</span>
-                    {vinPrefixes.map(p => (
-                      <button key={p} type="button"
-                        onClick={() => { setVin(p); setTimeout(() => vinInputRef.current?.focus(), 0) }}
-                        className="text-xs px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-mono tracking-wider hover:bg-blue-100 transition-colors">
-                        {p}<span className="opacity-50">…</span>
-                      </button>
-                    ))}
-                  </div>
+        {/* Stepper */}
+        <div className="flex items-center justify-center gap-2">
+          {STEPS.map((s, i) => {
+            const stepNum = (i + 1) as 1 | 2 | 3 | 4
+            const done = step > stepNum
+            const active = step === stepNum
+            const canGoBack = done && !saving && !finishing
+            return (
+              <div key={s.key} className="flex items-center gap-2">
+                {i > 0 && (
+                  <div className={`w-8 h-0.5 rounded-full transition-colors ${done ? 'bg-blue-500' : 'bg-gray-200'}`} />
                 )}
-                <input ref={vinInputRef} type="text" value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())}
-                  placeholder="WBA12345678901234"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400 font-mono uppercase" />
-              </div>
-
-              {/* Brand / Model */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('vehicles.brand_model')}</label>
-                <input type="text" value={brandModel} onChange={(e) => setBrandModel(e.target.value)}
-                  placeholder="Audi R8"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400" />
-                {brandSuggestions.length > 0 && (
-                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                    {brandSuggestions
-                      .filter(s => s.toLowerCase().includes(brandModel.toLowerCase()))
-                      .slice(0, 6)
-                      .map(s => (
-                        <button key={s} type="button" onClick={() => setBrandModel(s)}
-                          className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
-                            s === brandModel
-                              ? 'bg-blue-100 text-blue-800 border-blue-300 font-medium'
-                              : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200'
-                          }`}>
-                          {s}
-                        </button>
-                      ))}
-                  </div>
-                )}
-              </div>
-
-              {/* KM */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('vehicles.km')}</label>
-                <input type="number" inputMode="numeric" value={km} onChange={(e) => setKm(e.target.value)}
-                  placeholder="0" min="0"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400" />
-              </div>
-
-              {/* Fuel */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('vehicles.fuel')} — {fuel ? `${fuel}%` : '—'}
-                </label>
-                <input type="range" min="0" max="100" step="5" value={fuel} onChange={(e) => setFuel(e.target.value)}
-                  className="w-full accent-blue-600" />
-              </div>
-
-              {/* Battery */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('vehicles.battery')} ({t('common.optional')}) — {battery ? `${battery}%` : '—'}
-                </label>
-                <input type="range" min="0" max="100" step="5" value={battery || 0} onChange={(e) => setBattery(e.target.value)}
-                  className="w-full accent-green-500" />
-              </div>
-
-              <button onClick={handleStep1} disabled={saving}
-                className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                {saving ? t('common.loading') : <>{t('create_wizard.next')} <ChevronRight size={18} /></>}
-              </button>
-            </div>
-          )}
-
-          {/* ── STEP 2: Fotos ──────────────────────────────────────────────── */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-500">{t('create_wizard.photos_hint')}</p>
-
-              <div className="grid grid-cols-3 gap-2">
-                {PHOTO_TYPES.map(type => {
-                  const file = photoFiles[type]
-                  const previewUrl = photoUrls[type]
-                  const isLoading = uploading === type
-                  return (
-                    <div key={type} className="relative">
-                      <p className="text-xs text-gray-400 mb-1">{t(`photos.${type}`)}</p>
-                      <label className="cursor-pointer">
-                        <input type="file" accept="image/*" capture="environment" className="sr-only"
-                          onChange={e => {
-                            const f = e.target.files?.[0]
-                            if (f) setPhotoFiles(prev => ({ ...prev, [type]: f }))
-                            e.target.value = ''
-                          }} />
-                        <div className={`aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all ${
-                          file ? 'border-transparent' : 'border-dashed border-gray-300 hover:border-blue-400'
-                        }`}>
-                          {file && previewUrl
-                            ? <img src={previewUrl} alt={type} className="w-full h-full object-cover" />
-                            : (
-                              <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center text-gray-300 gap-1">
-                                {isLoading
-                                  ? <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                                  : <Camera size={16} />
-                                }
-                              </div>
-                            )
-                          }
-                        </div>
-                      </label>
-                      {file && (
-                        <button onClick={() => setPhotoFiles(prev => {
-                          const next = { ...prev }
-                          delete next[type]
-                          return next
-                        })}
-                          className="absolute top-5 right-1 bg-red-500 text-white rounded-full p-0.5 shadow">
-                          <Trash2 size={10} />
-                        </button>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-
-              <div className="flex gap-2">
-                <button onClick={() => setStep(1)}
-                  className="py-3 px-4 rounded-xl border border-gray-300 text-gray-600 font-medium flex items-center gap-1">
-                  <ChevronLeft size={18} /> {t('create_wizard.back')}
-                </button>
-                <button onClick={() => handleStep2()} disabled={saving}
-                  className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                  {saving ? t('common.loading') : <>{t('create_wizard.next')} <ChevronRight size={18} /></>}
+                <button
+                  type="button"
+                  disabled={!canGoBack}
+                  onClick={() => canGoBack && setStep(stepNum)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                    done ? 'bg-blue-100 text-blue-700 cursor-pointer hover:bg-blue-200' :
+                    active ? 'bg-blue-600 text-white cursor-default' :
+                    'bg-gray-100 text-gray-400 cursor-default'
+                  }`}>
+                  {done ? <Check size={12} /> : <span>{s.icon}</span>}
+                  <span className="hidden sm:inline">{t(`create_wizard.step_${s.key}`)}</span>
                 </button>
               </div>
-            </div>
-          )}
+            )
+          })}
+        </div>
+      </div>
 
-          {/* ── STEP 3: Schäden ─────────────────────────────────────────────── */}
-          {step === 3 && (
-            <div className="space-y-4">
-              {/* Added damages list */}
-              {damages.length > 0 && (
-                <div className="space-y-2">
-                  {damages.map((d, i) => (
-                    <div key={i} className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-sm text-gray-900">
-                            {t(`damages.types.${d.type}`, { defaultValue: d.type })}
-                          </span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            d.intensity === 'leicht' ? 'bg-green-100 text-green-700' :
-                            d.intensity === 'mittel' ? 'bg-amber-100 text-amber-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {t(`damages.intensities.${d.intensity}`)}
-                          </span>
-                        </div>
-                        {d.position && <p className="text-xs text-gray-400 mt-0.5">{d.position}</p>}
-                        {d.files.length > 0 && <p className="text-xs text-gray-400 mt-0.5">{d.files.length} {t('create_wizard.photos_count')}</p>}
-                      </div>
-                      <button onClick={() => removeDamage(i)} className="text-gray-300 hover:text-red-500 p-0.5">
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
+      <div className="px-4 py-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm mb-4">{error}</div>
+        )}
+
+        {/* ── STEP 1: Basisdaten ─────────────────────────────────────────── */}
+        {step === 1 && (
+          <div className="space-y-4">
+            {/* Fleet */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('vehicles.fleet')}</label>
+              <select value={fleetId} onChange={(e) => setFleetId(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-blue-400">
+                <option value="">{t('vehicle_card.no_fleet')}</option>
+                {fleets.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+              </select>
+            </div>
+
+            {/* License Plate */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('vehicles.license_plate')}</label>
+              <input type="text" value={licensePlate} onChange={(e) => setLicensePlate(e.target.value.toUpperCase())}
+                placeholder="AB CD 1234"
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400 font-mono uppercase" />
+            </div>
+
+            {/* VIN */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('vehicles.vin')}</label>
+              {vinPrefixes.length > 0 && !vin && (
+                <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                  <span className="text-xs text-gray-400">Präfix:</span>
+                  {vinPrefixes.map(p => (
+                    <button key={p} type="button"
+                      onClick={() => { setVin(p); setTimeout(() => vinInputRef.current?.focus(), 0) }}
+                      className="text-xs px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-mono tracking-wider hover:bg-blue-100 transition-colors">
+                      {p}<span className="opacity-50">…</span>
+                    </button>
                   ))}
                 </div>
               )}
+              <input ref={vinInputRef} type="text" value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())}
+                placeholder="WBA12345678901234"
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400 font-mono uppercase" />
+            </div>
 
-              {/* Damage form */}
-              {showDamageForm ? (
-                <div className="border border-gray-200 rounded-xl p-3 space-y-3 bg-gray-50">
-                  <div>
-                    <p className="text-xs font-medium text-gray-600 mb-1.5">{t('damages.type')}</p>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {DAMAGE_TYPES.map(dt => (
-                        <button key={dt} type="button" onClick={() => setDmgType(dt)}
-                          className={`py-1.5 px-2 rounded-lg text-xs border transition-colors ${
-                            dmgType === dt ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700'
-                          }`}>
-                          {t(`damages.types.${dt}`)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-medium text-gray-600 mb-1.5">{t('damages.intensity')}</p>
-                    <div className="flex gap-2">
-                      {DAMAGE_INTENSITIES.map(i => (
-                        <button key={i} type="button" onClick={() => setDmgIntensity(i)}
-                          className={`flex-1 py-1.5 rounded-lg text-xs border transition-colors ${
-                            dmgIntensity === i ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700'
-                          }`}>
-                          {t(`damages.intensities.${i}`)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <CarDamageSelector value={dmgPosition} onChange={setDmgPosition} />
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('damages.description')}</label>
-                    <textarea value={dmgDesc} onChange={e => setDmgDesc(e.target.value)} rows={2}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400 resize-none" />
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-medium text-gray-600 mb-1">{t('damages.photo')}</p>
-                    {dmgFiles.length > 0 && (
-                      <div className="grid grid-cols-3 gap-1.5 mb-2">
-                        {dmgFiles.map((f, i) => (
-                          <DmgFilePreview key={i} file={f} onRemove={() => setDmgFiles(fs => fs.filter((_, j) => j !== i))} />
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
-                        <input type="file" accept="image/*" capture="environment" className="sr-only"
-                          onChange={e => { const f = e.target.files?.[0]; if (f) setDmgFiles(fs => [...fs, f]); e.target.value = '' }} />
-                        <Camera size={14} /> {t('damages.photo_camera')}
-                      </label>
-                      <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
-                        <input type="file" accept="image/*" multiple className="sr-only"
-                          onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) setDmgFiles(fs => [...fs, ...files]); e.target.value = '' }} />
-                        <Plus size={14} /> {t('damages.photo_gallery')}
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button onClick={() => setShowDamageForm(false)}
-                      className="flex-1 py-2 rounded-xl border border-gray-300 text-gray-600 text-sm">
-                      {t('common.cancel')}
-                    </button>
-                    <button onClick={addDamage}
-                      className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
-                      {t('create_wizard.add_damage')}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button onClick={() => setShowDamageForm(true)}
-                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 text-sm font-medium flex items-center justify-center gap-1.5 hover:border-red-300 hover:text-red-500 transition-colors">
-                  <Plus size={16} /> {t('damages.add')}
-                </button>
-              )}
-
-              {/* Action buttons */}
-              {!showDamageForm && (
-                <div className="flex gap-2 pt-2">
-                  <button onClick={() => setStep(2)}
-                    className="py-3 px-4 rounded-xl border border-gray-300 text-gray-600 font-medium flex items-center gap-1">
-                    <ChevronLeft size={18} /> {t('create_wizard.back')}
-                  </button>
-                  {damages.length === 0 ? (
-                    <button onClick={handleStep3} disabled={saving}
-                      className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                      {saving ? t('common.loading') : <><Check size={18} /> {t('create_wizard.no_damages')}</>}
-                    </button>
-                  ) : (
-                    <button onClick={handleStep3} disabled={saving}
-                      className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                      {saving ? t('common.loading') : <>{t('create_wizard.next')} <ChevronRight size={18} /></>}
-                    </button>
-                  )}
+            {/* Brand / Model */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('vehicles.brand_model')}</label>
+              <input type="text" value={brandModel} onChange={(e) => setBrandModel(e.target.value)}
+                placeholder="Audi R8"
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400" />
+              {brandSuggestions.length > 0 && (
+                <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                  {brandSuggestions
+                    .filter(s => s.toLowerCase().includes(brandModel.toLowerCase()))
+                    .slice(0, 6)
+                    .map(s => (
+                      <button key={s} type="button" onClick={() => setBrandModel(s)}
+                        className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                          s === brandModel
+                            ? 'bg-blue-100 text-blue-800 border-blue-300 font-medium'
+                            : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200'
+                        }`}>
+                        {s}
+                      </button>
+                    ))}
                 </div>
               )}
             </div>
-          )}
 
-          {/* ── STEP 4: Protokoll ───────────────────────────────────────────── */}
-          {step === 4 && (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-500">{t('create_wizard.protocol_hint')}</p>
+            {/* KM */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('vehicles.km')}</label>
+              <input type="number" inputMode="numeric" value={km} onChange={(e) => setKm(e.target.value)}
+                placeholder="0" min="0"
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400" />
+            </div>
 
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">{t('protocol.inspector')}</label>
-                <input type="text" value={protoForm.inspector_name}
-                  onChange={e => setProtoForm(p => ({ ...p, inspector_name: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
+            {/* Fuel */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('vehicles.fuel')} — {fuel ? `${fuel}%` : '—'}
+              </label>
+              <input type="range" min="0" max="100" step="5" value={fuel} onChange={(e) => setFuel(e.target.value)}
+                className="w-full accent-blue-600" />
+            </div>
+
+            {/* Battery */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('vehicles.battery')} ({t('common.optional')}) — {battery ? `${battery}%` : '—'}
+              </label>
+              <input type="range" min="0" max="100" step="5" value={battery || 0} onChange={(e) => setBattery(e.target.value)}
+                className="w-full accent-green-500" />
+            </div>
+
+            <button onClick={handleStep1} disabled={saving}
+              className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+              {saving ? t('common.loading') : <>{t('create_wizard.next')} <ChevronRight size={18} /></>}
+            </button>
+          </div>
+        )}
+
+        {/* ── STEP 2: Fotos ──────────────────────────────────────────────── */}
+        {step === 2 && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">{t('create_wizard.photos_hint')}</p>
+
+            <div className="grid grid-cols-3 gap-2">
+              {PHOTO_TYPES.map(type => {
+                const file = photoFiles[type]
+                const previewUrl = photoUrls[type]
+                const isLoading = uploading === type
+                return (
+                  <div key={type} className="relative">
+                    <p className="text-xs text-gray-400 mb-1">{t(`photos.${type}`)}</p>
+                    <label className="cursor-pointer">
+                      <input type="file" accept="image/*" capture="environment" className="sr-only"
+                        onChange={e => {
+                          const f = e.target.files?.[0]
+                          if (f) setPhotoFiles(prev => ({ ...prev, [type]: f }))
+                          e.target.value = ''
+                        }} />
+                      <div className={`aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all ${
+                        file ? 'border-transparent' : 'border-dashed border-gray-300 hover:border-blue-400'
+                      }`}>
+                        {file && previewUrl
+                          ? <img src={previewUrl} alt={type} className="w-full h-full object-cover" />
+                          : (
+                            <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center text-gray-300 gap-1">
+                              {isLoading
+                                ? <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                                : <Camera size={16} />
+                              }
+                            </div>
+                          )
+                        }
+                      </div>
+                    </label>
+                    {file && (
+                      <button onClick={() => setPhotoFiles(prev => {
+                        const next = { ...prev }
+                        delete next[type]
+                        return next
+                      })}
+                        className="absolute top-5 right-1 bg-red-500 text-white rounded-full p-0.5 shadow">
+                        <Trash2 size={10} />
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={() => setStep(1)}
+                className="py-3 px-4 rounded-xl border border-gray-300 text-gray-600 font-medium flex items-center gap-1">
+                <ChevronLeft size={18} /> {t('create_wizard.back')}
+              </button>
+              <button onClick={() => handleStep2()} disabled={saving}
+                className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                {saving ? t('common.loading') : <>{t('create_wizard.next')} <ChevronRight size={18} /></>}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 3: Schäden ─────────────────────────────────────────────── */}
+        {step === 3 && (
+          <div className="space-y-4">
+            {/* Added damages list */}
+            {damages.length > 0 && (
+              <div className="space-y-2">
+                {damages.map((d, i) => (
+                  <div key={i} className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm text-gray-900">
+                          {t(`damages.types.${d.type}`, { defaultValue: d.type })}
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          d.intensity === 'leicht' ? 'bg-green-100 text-green-700' :
+                          d.intensity === 'mittel' ? 'bg-amber-100 text-amber-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {t(`damages.intensities.${d.intensity}`)}
+                        </span>
+                      </div>
+                      {d.position && <p className="text-xs text-gray-400 mt-0.5">{d.position}</p>}
+                      {d.files.length > 0 && <p className="text-xs text-gray-400 mt-0.5">{d.files.length} {t('create_wizard.photos_count')}</p>}
+                    </div>
+                    <button onClick={() => removeDamage(i)} className="text-gray-300 hover:text-red-500 p-0.5">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
               </div>
+            )}
 
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">{t('protocol.location')}</label>
-                <input type="text" value={protoForm.location}
-                  onChange={e => setProtoForm(p => ({ ...p, location: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">{t('protocol.date')}</label>
-                <input type="date" value={protoForm.intake_date}
-                  onChange={e => setProtoForm(p => ({ ...p, intake_date: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">{t('protocol.notes')}</label>
-                <textarea value={protoForm.notes} onChange={e => setProtoForm(p => ({ ...p, notes: e.target.value }))} rows={2}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400 resize-none" />
-              </div>
-
-              {/* Signature */}
-              <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">{t('protocol.signature')}</p>
-                <div className="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50">
-                  <canvas ref={canvasRef} width={600} height={160} className="w-full touch-none"
-                    onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
-                    onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw} />
+            {/* Damage form */}
+            {showDamageForm ? (
+              <div className="border border-gray-200 rounded-xl p-3 space-y-3 bg-gray-50">
+                <div>
+                  <p className="text-xs font-medium text-gray-600 mb-1.5">{t('damages.type')}</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {DAMAGE_TYPES.map(dt => (
+                      <button key={dt} type="button" onClick={() => setDmgType(dt)}
+                        className={`py-1.5 px-2 rounded-lg text-xs border transition-colors ${
+                          dmgType === dt ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700'
+                        }`}>
+                        {t(`damages.types.${dt}`)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex justify-between mt-1">
-                  <span className="text-xs text-gray-400">{t('protocol.signature_hint')}</span>
-                  <button type="button" onClick={clearCanvas} className="text-xs text-gray-400 hover:text-gray-700">
-                    {t('protocol.signature_clear')}
+
+                <div>
+                  <p className="text-xs font-medium text-gray-600 mb-1.5">{t('damages.intensity')}</p>
+                  <div className="flex gap-2">
+                    {DAMAGE_INTENSITIES.map(i => (
+                      <button key={i} type="button" onClick={() => setDmgIntensity(i)}
+                        className={`flex-1 py-1.5 rounded-lg text-xs border transition-colors ${
+                          dmgIntensity === i ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700'
+                        }`}>
+                        {t(`damages.intensities.${i}`)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <CarDamageSelector value={dmgPosition} onChange={setDmgPosition} />
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('damages.description')}</label>
+                  <textarea value={dmgDesc} onChange={e => setDmgDesc(e.target.value)} rows={2}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400 resize-none" />
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-gray-600 mb-1">{t('damages.photo')}</p>
+                  {dmgFiles.length > 0 && (
+                    <div className="grid grid-cols-3 gap-1.5 mb-2">
+                      {dmgFiles.map((f, i) => (
+                        <DmgFilePreview key={i} file={f} onRemove={() => setDmgFiles(fs => fs.filter((_, j) => j !== i))} />
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
+                      <input type="file" accept="image/*" capture="environment" className="sr-only"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) setDmgFiles(fs => [...fs, f]); e.target.value = '' }} />
+                      <Camera size={14} /> {t('damages.photo_camera')}
+                    </label>
+                    <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
+                      <input type="file" accept="image/*" multiple className="sr-only"
+                        onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) setDmgFiles(fs => [...fs, ...files]); e.target.value = '' }} />
+                      <Plus size={14} /> {t('damages.photo_gallery')}
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button onClick={() => setShowDamageForm(false)}
+                    className="flex-1 py-2 rounded-xl border border-gray-300 text-gray-600 text-sm">
+                    {t('common.cancel')}
+                  </button>
+                  <button onClick={addDamage}
+                    className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+                    {t('create_wizard.add_damage')}
                   </button>
                 </div>
               </div>
+            ) : (
+              <button onClick={() => setShowDamageForm(true)}
+                className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 text-sm font-medium flex items-center justify-center gap-1.5 hover:border-red-300 hover:text-red-500 transition-colors">
+                <Plus size={16} /> {t('damages.add')}
+              </button>
+            )}
 
-              <div className="flex gap-2">
-                <button onClick={() => setStep(3)}
+            {/* Action buttons */}
+            {!showDamageForm && (
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => setStep(2)}
                   className="py-3 px-4 rounded-xl border border-gray-300 text-gray-600 font-medium flex items-center gap-1">
                   <ChevronLeft size={18} /> {t('create_wizard.back')}
                 </button>
-                <button onClick={handleFinish} disabled={finishing}
-                  className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                  {finishing ? t('common.loading') : <><Check size={18} /> {t('create_wizard.done')}</>}
+                {damages.length === 0 ? (
+                  <button onClick={handleStep3} disabled={saving}
+                    className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                    {saving ? t('common.loading') : <><Check size={18} /> {t('create_wizard.no_damages')}</>}
+                  </button>
+                ) : (
+                  <button onClick={handleStep3} disabled={saving}
+                    className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                    {saving ? t('common.loading') : <>{t('create_wizard.next')} <ChevronRight size={18} /></>}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── STEP 4: Protokoll ───────────────────────────────────────────── */}
+        {step === 4 && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">{t('create_wizard.protocol_hint')}</p>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('protocol.inspector')}</label>
+              <input type="text" value={protoForm.inspector_name}
+                onChange={e => setProtoForm(p => ({ ...p, inspector_name: e.target.value }))}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('protocol.location')}</label>
+              <input type="text" value={protoForm.location}
+                onChange={e => setProtoForm(p => ({ ...p, location: e.target.value }))}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('protocol.date')}</label>
+              <input type="date" value={protoForm.intake_date}
+                onChange={e => setProtoForm(p => ({ ...p, intake_date: e.target.value }))}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('protocol.notes')}</label>
+              <textarea value={protoForm.notes} onChange={e => setProtoForm(p => ({ ...p, notes: e.target.value }))} rows={2}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400 resize-none" />
+            </div>
+
+            {/* Signature */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-1">{t('protocol.signature')}</p>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50">
+                <canvas ref={canvasRef} width={600} height={160} className="w-full touch-none"
+                  onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
+                  onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw} />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-xs text-gray-400">{t('protocol.signature_hint')}</span>
+                <button type="button" onClick={clearCanvas} className="text-xs text-gray-400 hover:text-gray-700">
+                  {t('protocol.signature_clear')}
                 </button>
               </div>
             </div>
-          )}
-        </div>
+
+            <div className="flex gap-2">
+              <button onClick={() => setStep(3)}
+                className="py-3 px-4 rounded-xl border border-gray-300 text-gray-600 font-medium flex items-center gap-1">
+                <ChevronLeft size={18} /> {t('create_wizard.back')}
+              </button>
+              <button onClick={handleFinish} disabled={finishing}
+                className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                {finishing ? t('common.loading') : <><Check size={18} /> {t('create_wizard.done')}</>}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </>
+    </Modal>
   )
 }
 
