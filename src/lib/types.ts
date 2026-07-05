@@ -81,6 +81,15 @@ export interface Feedback {
   created_at: string
 }
 
+export interface FleetTodo {
+  id: string
+  fleet_id: string
+  title: string
+  done: boolean
+  position: number
+  created_at: string
+}
+
 export type VehicleSection = 'basisdaten' | 'fotos' | 'schaeden' | 'protokoll'
 
 export interface SectionPresence {

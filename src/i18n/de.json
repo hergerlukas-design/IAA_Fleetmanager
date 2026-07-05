@@ -171,6 +171,13 @@
     "col_zweck": "Zweck / Ziel",
     "col_driver": "Erfasst von"
   },
+  "fleet_todos": {
+    "title": "Aufgaben",
+    "empty": "Noch keine Aufgaben.",
+    "placeholder": "Neue Aufgabe…",
+    "open_count": "{{count}} offene Aufgabe(n)",
+    "save_failed": "Speichern fehlgeschlagen. Bitte erneut versuchen."
+  },
   "status_section": {
     "title": "Fahrzeugstatus",
     "km": "Kilometerstand",

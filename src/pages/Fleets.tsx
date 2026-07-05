@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Plus, ChevronRight, Car, RefreshCw } from 'lucide-react'
+import { Plus, ChevronRight, Car, RefreshCw, ListChecks } from 'lucide-react'
 import Layout from '@/components/Layout'
 import { useAuth } from '@/contexts/useAuth'
 import { fetchActiveFleets, fetchFleetVehicleCounts } from '@/lib/fleets'
+import { fetchOpenTodoCounts } from '@/lib/fleetTodos'
 import type { Fleet } from '@/lib/types'
 
 // ─── Status bar ─────────────────────────────────────────────────────────────
@@ -23,9 +24,10 @@ function StatusBar({ in_bearbeitung, abgeschlossen, total }: {
 
 // ─── Fleet card ─────────────────────────────────────────────────────────────
 
-function FleetCard({ fleet, counts, onClick }: {
+function FleetCard({ fleet, counts, openTodos, onClick }: {
   fleet: Fleet
   counts: { total: number; in_bearbeitung: number; abgeschlossen: number }
+  openTodos: number
   onClick: () => void
 }) {
   const { t } = useTranslation()
@@ -40,7 +42,18 @@ function FleetCard({ fleet, counts, onClick }: {
           style={{ backgroundColor: fleet.color ?? '#3b82f6' }}
         />
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 truncate">{fleet.name}</h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-semibold text-gray-900 truncate">{fleet.name}</h3>
+            {openTodos > 0 && (
+              <span
+                className="flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 flex-shrink-0"
+                title={t('fleet_todos.open_count', { count: openTodos })}
+              >
+                <ListChecks size={11} />
+                {openTodos}
+              </span>
+            )}
+          </div>
           {fleet.description && (
             <p className="text-xs text-gray-400 truncate">{fleet.description}</p>
           )}
@@ -79,6 +92,7 @@ export default function Fleets() {
 
   const [fleets, setFleets]  = useState<Fleet[]>([])
   const [counts, setCounts]  = useState<Record<string, { total: number; in_bearbeitung: number; abgeschlossen: number }>>({})
+  const [todoCounts, setTodoCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState<string | null>(null)
 
@@ -86,9 +100,17 @@ export default function Fleets() {
     setLoading(true)
     setError(null)
     try {
-      const [f, c] = await Promise.all([fetchActiveFleets(), fetchFleetVehicleCounts()])
+      const [f, c] = await Promise.all([
+        fetchActiveFleets(),
+        fetchFleetVehicleCounts(),
+      ])
       setFleets(f)
       setCounts(c)
+      // Todo counts are secondary — never let them break the fleet list
+      // (e.g. before the fleet_todos migration has been applied).
+      fetchOpenTodoCounts()
+        .then(setTodoCounts)
+        .catch((err) => console.warn('[Fleets] Todo counts unavailable:', err))
     } catch (err) {
       console.error('[Fleets] Supabase load error:', err)
       setError(t('errors.load_failed'))
@@ -157,6 +179,7 @@ export default function Fleets() {
             key={fleet.id}
             fleet={fleet}
             counts={counts[fleet.id] ?? { total: 0, in_bearbeitung: 0, abgeschlossen: 0 }}
+            openTodos={todoCounts[fleet.id] ?? 0}
             onClick={() => navigate(`/fleet/${fleet.id}`)}
           />
         ))}

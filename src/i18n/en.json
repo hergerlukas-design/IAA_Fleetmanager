@@ -171,6 +171,13 @@
     "col_zweck": "Purpose / Destination",
     "col_driver": "Recorded by"
   },
+  "fleet_todos": {
+    "title": "Tasks",
+    "empty": "No tasks yet.",
+    "placeholder": "New task…",
+    "open_count": "{{count}} open task(s)",
+    "save_failed": "Saving failed. Please try again."
+  },
   "status_section": {
     "title": "Vehicle Status",
     "km": "Odometer",

@@ -12,6 +12,7 @@ import type { Fleet, Vehicle } from '@/lib/types'
 import type { FleetKmSummary } from '@/lib/kmHistory'
 import CreateVehicleSheet from './CreateVehicleSheet'
 import AddKmSheet from './AddKmSheet'
+import FleetTodos from '@/components/FleetTodos'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { savePdf } from '@/lib/export'
@@ -375,6 +376,11 @@ export default function FleetDetail() {
       </div>
 
       <div className="px-4 space-y-2 pb-4">
+        {/* Fleet todo list — per fleet, collapsible */}
+        {!loading && id && (
+          <FleetTodos fleetId={id} />
+        )}
+
         {loading && (
           <div className="space-y-2">
             {[1, 2, 3, 4].map((i) => (
