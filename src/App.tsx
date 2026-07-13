@@ -6,6 +6,7 @@ import FleetDetail from '@/pages/FleetDetail'
 import Vehicles from '@/pages/Vehicles'
 import VehicleCard from '@/pages/VehicleCard'
 import Settings from '@/pages/Settings'
+import DuplicateScan from '@/pages/DuplicateScan'
 import Impressum from '@/pages/Impressum'
 import Datenschutz from '@/pages/Datenschutz'
 
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/vehicles"     element={<ProtectedRoute><Vehicles /></ProtectedRoute>} />
         <Route path="/vehicle/:id"  element={<ProtectedRoute><VehicleCard /></ProtectedRoute>} />
         <Route path="/settings"     element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/admin/duplicates" element={<ProtectedRoute><DuplicateScan /></ProtectedRoute>} />
         <Route path="/impressum"    element={<Impressum />} />
         <Route path="/datenschutz"  element={<Datenschutz />} />
         <Route path="*"             element={<Navigate to="/fleets" replace />} />
