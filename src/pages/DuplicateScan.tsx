@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, Link } from 'react-router-dom'
 import { AlertTriangle, Search, Trash2, X, Sparkles, Copy, Ghost, ExternalLink } from 'lucide-react'
@@ -22,22 +22,58 @@ function fmtDate(d: string | null) {
   return new Date(d).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+// Persists scan results + selection across the "view vehicle" navigation
+// (opening it in the same tab, since sessionStorage-based auth isn't shared
+// with a new tab) so the reviewer doesn't have to re-scan when coming back.
+const STORAGE_KEY = 'clx_duplicate_scan'
+
+interface PersistedState {
+  duplicateGroups: DuplicateGroup[]
+  orphanGroups: OrphanGroup[]
+  selectedVehicles: string[]
+  selectedOrphans: Record<string, string[]>
+}
+
+function loadPersisted(): PersistedState | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) as PersistedState : null
+  } catch {
+    return null
+  }
+}
+
 export default function DuplicateScan() {
   const { t } = useTranslation()
   const { isAdmin } = useAuth()
 
+  const persisted = loadPersisted()
+
   const [scanning, setScanning] = useState(false)
-  const [scanned, setScanned]   = useState(false)
+  const [scanned, setScanned]   = useState(persisted != null)
   const [error, setError]       = useState<string | null>(null)
 
-  const [duplicateGroups, setDuplicateGroups] = useState<DuplicateGroup[]>([])
-  const [orphanGroups, setOrphanGroups]       = useState<OrphanGroup[]>([])
+  const [duplicateGroups, setDuplicateGroups] = useState<DuplicateGroup[]>(persisted?.duplicateGroups ?? [])
+  const [orphanGroups, setOrphanGroups]       = useState<OrphanGroup[]>(persisted?.orphanGroups ?? [])
 
-  const [selectedVehicles, setSelectedVehicles] = useState<Set<string>>(new Set())
-  const [selectedOrphans, setSelectedOrphans]   = useState<Record<string, Set<string>>>({})
+  const [selectedVehicles, setSelectedVehicles] = useState<Set<string>>(new Set(persisted?.selectedVehicles ?? []))
+  const [selectedOrphans, setSelectedOrphans]   = useState<Record<string, Set<string>>>(
+    Object.fromEntries(Object.entries(persisted?.selectedOrphans ?? {}).map(([k, v]) => [k, new Set(v)])),
+  )
 
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleting, setDeleting]       = useState(false)
+
+  useEffect(() => {
+    if (!scanned) return
+    const state: PersistedState = {
+      duplicateGroups,
+      orphanGroups,
+      selectedVehicles: [...selectedVehicles],
+      selectedOrphans: Object.fromEntries(Object.entries(selectedOrphans).map(([k, v]) => [k, [...v]])),
+    }
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  }, [scanned, duplicateGroups, orphanGroups, selectedVehicles, selectedOrphans])
 
   if (!isAdmin) return <Navigate to="/settings" replace />
 
@@ -206,7 +242,7 @@ export default function DuplicateScan() {
                                 </p>
                               </div>
                             </label>
-                            <Link to={`/vehicle/${v.id}`} target="_blank" rel="noopener noreferrer"
+                            <Link to={`/vehicle/${v.id}`}
                               title={t('duplicate_scan.view_vehicle')}
                               className="flex-shrink-0 p-1.5 -m-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">
                               <ExternalLink size={16} />

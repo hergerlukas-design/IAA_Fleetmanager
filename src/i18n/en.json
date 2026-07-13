@@ -264,7 +264,7 @@
     "duplicates_title": "Possible duplicates",
     "orphans_title": "Orphaned records",
     "auto_select": "Select incomplete",
-    "view_vehicle": "View vehicle (new tab)",
+    "view_vehicle": "View vehicle",
     "incomplete": "incomplete",
     "no_brand": "No brand/model",
     "photo_count": "{{count}} photo(s)",
