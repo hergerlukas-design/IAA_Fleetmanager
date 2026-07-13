@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Globe, Download, Layers, Plus, Pencil, Trash2, X, Check, MessageSquare, ChevronDown, RefreshCw } from 'lucide-react'
+import { Globe, Download, Layers, Plus, Pencil, Trash2, X, Check, MessageSquare, ChevronDown, RefreshCw, Copy } from 'lucide-react'
 import Layout from '@/components/Layout'
 import Modal from '@/components/Modal'
 import { useAuth } from '@/contexts/useAuth'
@@ -242,6 +242,17 @@ export default function Settings() {
             <button onClick={handleExport} disabled={exporting}
               className="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-medium disabled:opacity-50 hover:bg-emerald-700">
               {exporting ? t('common.loading') : t('settings.export_btn')}
+            </button>
+          </Section>
+        )}
+
+        {/* Duplicate Scan */}
+        {isAdmin && (
+          <Section title={t('duplicate_scan.title')} icon={<Copy size={18} />}>
+            <p className="text-sm text-gray-500 mb-3">{t('duplicate_scan.settings_hint')}</p>
+            <button onClick={() => navigate('/admin/duplicates')}
+              className="w-full py-2.5 rounded-xl bg-amber-500 text-white font-medium hover:bg-amber-600 transition-colors">
+              {t('duplicate_scan.settings_btn')}
             </button>
           </Section>
         )}

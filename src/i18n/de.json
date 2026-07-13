@@ -254,5 +254,27 @@
     "reload": "Aktualisieren",
     "check": "Nach Updates suchen",
     "checking": "Suche…"
+  },
+  "duplicate_scan": {
+    "title": "Duplikat-Scan",
+    "intro": "Sucht nach Fahrzeugen mit identischem Kennzeichen oder VIN sowie nach verwaisten Fotos, Schäden, Protokollen und KM-Einträgen ohne zugehöriges Fahrzeug.",
+    "scan_btn": "Scan starten",
+    "rescan_btn": "Erneut scannen",
+    "none_found": "Keine Duplikate oder verwaisten Datensätze gefunden.",
+    "duplicates_title": "Mögliche Duplikate",
+    "orphans_title": "Verwaiste Datensätze",
+    "auto_select": "Unvollständige wählen",
+    "incomplete": "unvollständig",
+    "no_brand": "Ohne Marke/Modell",
+    "photo_count": "{{count}} Foto(s)",
+    "damage_count": "{{count}} Schaden/Schäden",
+    "has_protocol": "Protokoll vorhanden",
+    "no_protocol": "kein Protokoll",
+    "selected_count": "{{count}} ausgewählt",
+    "confirm_title": "Löschen bestätigen",
+    "confirm_body": "{{count}} Datensatz/Datensätze werden unwiderruflich gelöscht, inkl. zugehöriger Fotos in der Ablage. Diese Aktion kann nicht rückgängig gemacht werden.",
+    "confirm_delete_btn": "Endgültig löschen",
+    "settings_hint": "Findet doppelt angelegte Fahrzeuge und verwaiste Datensätze zur Überprüfung.",
+    "settings_btn": "Scan öffnen"
   }
 }

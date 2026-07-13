@@ -254,5 +254,27 @@
     "reload": "Update",
     "check": "Check for updates",
     "checking": "Checking…"
+  },
+  "duplicate_scan": {
+    "title": "Duplicate Scan",
+    "intro": "Searches for vehicles with an identical license plate or VIN, and for orphaned photos, damages, protocols and mileage entries with no matching vehicle.",
+    "scan_btn": "Start scan",
+    "rescan_btn": "Scan again",
+    "none_found": "No duplicates or orphaned records found.",
+    "duplicates_title": "Possible duplicates",
+    "orphans_title": "Orphaned records",
+    "auto_select": "Select incomplete",
+    "incomplete": "incomplete",
+    "no_brand": "No brand/model",
+    "photo_count": "{{count}} photo(s)",
+    "damage_count": "{{count}} damage(s)",
+    "has_protocol": "has protocol",
+    "no_protocol": "no protocol",
+    "selected_count": "{{count}} selected",
+    "confirm_title": "Confirm deletion",
+    "confirm_body": "{{count}} record(s) will be permanently deleted, including related photos in storage. This action cannot be undone.",
+    "confirm_delete_btn": "Delete permanently",
+    "settings_hint": "Finds duplicate vehicle entries and orphaned records for review.",
+    "settings_btn": "Open scan"
   }
 }
