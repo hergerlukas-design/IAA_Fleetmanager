@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { X, Camera, Trash2, Plus, Check, ChevronRight, ChevronLeft } from 'lucide-react'
 import { useAuth } from '@/contexts/useAuth'
 import { fetchActiveFleets } from '@/lib/fleets'
-import { createVehicle, uploadVehiclePhoto, uploadSignature } from '@/lib/vehicles'
+import { createVehicle, updateVehicle, uploadVehiclePhoto, uploadSignature } from '@/lib/vehicles'
 import {
   createDamage, uploadDamagePhoto, updateDamage, serializeDamagePaths,
   DAMAGE_TYPES, DAMAGE_INTENSITIES,
@@ -134,7 +134,7 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
     setSaving(true)
     setError(null)
     try {
-      const v = await createVehicle({
+      const fields = {
         fleet_id:      fleetId || null,
         vin:           vin.trim() || null,
         license_plate: licensePlate.trim() || null,
@@ -142,12 +142,19 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
         km:            km ? parseInt(km) : null,
         fuel:          fuel ? parseInt(fuel) : null,
         battery:       battery ? parseInt(battery) : null,
-        notes:         null,
-        status:        'in_bearbeitung',
-        werkstatt:     false,
-        created_by:    userName || null,
-      })
-      setVehicleId(v.id)
+      }
+      if (vehicleId) {
+        await updateVehicle(vehicleId, fields)
+      } else {
+        const v = await createVehicle({
+          ...fields,
+          notes:      null,
+          status:     'in_bearbeitung',
+          werkstatt:  false,
+          created_by: userName || null,
+        })
+        setVehicleId(v.id)
+      }
       setStep(2)
     } catch {
       setError(t('errors.save_failed'))
