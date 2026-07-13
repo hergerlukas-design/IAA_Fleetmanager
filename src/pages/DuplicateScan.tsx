@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Navigate } from 'react-router-dom'
-import { AlertTriangle, Search, Trash2, X, Sparkles, Copy, Ghost } from 'lucide-react'
+import { Navigate, Link } from 'react-router-dom'
+import { AlertTriangle, Search, Trash2, X, Sparkles, Copy, Ghost, ExternalLink } from 'lucide-react'
 import Layout from '@/components/Layout'
 import Modal from '@/components/Modal'
 import { useAuth } from '@/contexts/useAuth'
@@ -180,31 +180,38 @@ export default function DuplicateScan() {
                         const selected = selectedVehicles.has(v.id)
                         const incomplete = !entry.hasProtocol
                         return (
-                          <label key={v.id}
-                            className={`flex items-start gap-2.5 rounded-xl px-3 py-2.5 cursor-pointer transition-colors ${
+                          <div key={v.id}
+                            className={`flex items-start gap-2.5 rounded-xl px-3 py-2.5 transition-colors ${
                               selected ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-transparent hover:border-gray-200'
                             }`}>
-                            <input type="checkbox" checked={selected} onChange={() => toggleVehicle(v.id)}
-                              className="mt-0.5 w-4 h-4 accent-red-600 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-sm font-medium text-gray-900 truncate">
-                                  {v.brand_model || t('duplicate_scan.no_brand')}
-                                </span>
-                                {incomplete && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">
-                                    {t('duplicate_scan.incomplete')}
+                            <label className="flex items-start gap-2.5 flex-1 min-w-0 cursor-pointer">
+                              <input type="checkbox" checked={selected} onChange={() => toggleVehicle(v.id)}
+                                className="mt-0.5 w-4 h-4 accent-red-600 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-sm font-medium text-gray-900 truncate">
+                                    {v.brand_model || t('duplicate_scan.no_brand')}
                                   </span>
-                                )}
+                                  {incomplete && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">
+                                      {t('duplicate_scan.incomplete')}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-400">{fmtDate(v.created_at)}</p>
+                                <p className="text-xs text-gray-400">
+                                  {t('duplicate_scan.photo_count', { count: entry.photoCount })} ·{' '}
+                                  {t('duplicate_scan.damage_count', { count: entry.damageCount })} ·{' '}
+                                  {entry.hasProtocol ? t('duplicate_scan.has_protocol') : t('duplicate_scan.no_protocol')}
+                                </p>
                               </div>
-                              <p className="text-xs text-gray-400">{fmtDate(v.created_at)}</p>
-                              <p className="text-xs text-gray-400">
-                                {t('duplicate_scan.photo_count', { count: entry.photoCount })} ·{' '}
-                                {t('duplicate_scan.damage_count', { count: entry.damageCount })} ·{' '}
-                                {entry.hasProtocol ? t('duplicate_scan.has_protocol') : t('duplicate_scan.no_protocol')}
-                              </p>
-                            </div>
-                          </label>
+                            </label>
+                            <Link to={`/vehicle/${v.id}`} target="_blank" rel="noopener noreferrer"
+                              title={t('duplicate_scan.view_vehicle')}
+                              className="flex-shrink-0 p-1.5 -m-1 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">
+                              <ExternalLink size={16} />
+                            </Link>
+                          </div>
                         )
                       })}
                     </div>
