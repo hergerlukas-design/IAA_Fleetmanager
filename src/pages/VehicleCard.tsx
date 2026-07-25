@@ -5,6 +5,7 @@ import {
   ArrowLeft, Camera, Trash2, Plus, Lock, CheckCircle2,
   AlertCircle, Pencil, ChevronRight, Wrench,
 } from 'lucide-react'
+import ImageLightbox from '@/components/ImageLightbox'
 import { supabase, getPhotoUrl, ERR_FILE_TOO_LARGE } from '@/lib/supabase'
 import {
   fetchVehicle, updateVehicle, fetchVehiclePhotos,
@@ -380,7 +381,9 @@ function FotosCard({ vehicleId, vehicle, photos, locked, isAdmin, onRefresh }: {
   const canEdit = !locked && (isAdmin || vehicle.status === 'in_bearbeitung')
   const [uploading, setUploading] = useState<string | null>(null)
   const [cacheBust, setCacheBust] = useState(0)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const photoByType = Object.fromEntries(photos.map(p => [p.photo_type, p]))
+  const existingPhotos = PHOTO_TYPES.map(t => photoByType[t]).filter(Boolean) as VehiclePhoto[]
 
   async function handleFile(type: VehiclePhoto['photo_type'], file: File) {
     setUploading(type)
@@ -419,40 +422,68 @@ function FotosCard({ vehicleId, vehicle, photos, locked, isAdmin, onRefresh }: {
         {PHOTO_TYPES.map(type => {
           const photo     = photoByType[type]
           const isLoading = uploading === type
+          const lbIndex   = existingPhotos.findIndex(p => p.photo_type === type)
           return (
             <div key={type} className="relative">
               <p className="text-xs text-gray-400 mb-1">{t(`photos.${type}`)}</p>
-              <label className={canEdit ? 'cursor-pointer' : 'cursor-default'}>
-                {canEdit && (
-                  <input type="file" accept="image/*" capture="environment" className="sr-only"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(type, f) }} />
-                )}
-                <div className={`aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all ${
-                  photo ? 'border-transparent' : canEdit ? 'border-dashed border-gray-300 hover:border-blue-400' : 'border-gray-200'
-                }`}>
-                  {photo
-                    ? <img src={`${getPhotoUrl(photo.storage_path)}?v=${cacheBust}`} alt={type} className="w-full h-full object-cover" />
-                    : (
-                      <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center text-gray-300 gap-1">
-                        {isLoading
-                          ? <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                          : <Camera size={16} />
-                        }
-                      </div>
-                    )
-                  }
-                </div>
-              </label>
-              {photo && canEdit && (
-                <button onClick={() => handleDelete(photo)}
-                  className="absolute top-5 right-1 bg-red-500 text-white rounded-full p-0.5 shadow">
-                  <Trash2 size={10} />
-                </button>
+
+              {photo ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setLightboxIndex(lbIndex)}
+                    className="w-full cursor-zoom-in"
+                  >
+                    <div className="aspect-[4/3] rounded-xl overflow-hidden border-2 border-transparent">
+                      <img src={`${getPhotoUrl(photo.storage_path)}?v=${cacheBust}`} alt={type} className="w-full h-full object-cover" />
+                    </div>
+                  </button>
+                  {canEdit && (
+                    <>
+                      <label className="absolute top-5 left-1 bg-blue-500 text-white rounded-full p-0.5 shadow cursor-pointer" title={t('photos.replace')}>
+                        <input type="file" accept="image/*" capture="environment" className="sr-only"
+                          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(type, f) }} />
+                        <Camera size={10} />
+                      </label>
+                      <button onClick={() => handleDelete(photo)}
+                        className="absolute top-5 right-1 bg-red-500 text-white rounded-full p-0.5 shadow">
+                        <Trash2 size={10} />
+                      </button>
+                    </>
+                  )}
+                </>
+              ) : (
+                <label className={canEdit ? 'cursor-pointer' : 'cursor-default'}>
+                  {canEdit && (
+                    <input type="file" accept="image/*" capture="environment" className="sr-only"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(type, f) }} />
+                  )}
+                  <div className={`aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all ${
+                    canEdit ? 'border-dashed border-gray-300 hover:border-blue-400' : 'border-gray-200'
+                  }`}>
+                    <div className="w-full h-full bg-gray-50 flex flex-col items-center justify-center text-gray-300 gap-1">
+                      {isLoading
+                        ? <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                        : <Camera size={16} />
+                      }
+                    </div>
+                  </div>
+                </label>
               )}
             </div>
           )
         })}
       </div>
+
+      {lightboxIndex !== null && (
+        <ImageLightbox
+          urls={existingPhotos.map(p => `${getPhotoUrl(p.storage_path)}?v=${cacheBust}`)}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNext={() => setLightboxIndex(i => Math.min(existingPhotos.length - 1, (i ?? 0) + 1))}
+          onPrev={() => setLightboxIndex(i => Math.max(0, (i ?? 0) - 1))}
+        />
+      )}
     </div>
   )
 }
@@ -484,6 +515,7 @@ function DamageRow({ damage: d, onDelete }: {
   const { t, i18n } = useTranslation()
   const isEn = i18n.language.startsWith('en')
   const [open, setOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const photoPaths = parseDamagePaths(d.storage_path)
   const hasDetails = !!(d.description || photoPaths.length > 0)
 
@@ -528,10 +560,21 @@ function DamageRow({ damage: d, onDelete }: {
           {photoPaths.length > 0 && (
             <div className={`grid gap-2 ${photoPaths.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
               {photoPaths.map((p, i) => (
-                <img key={i} src={getPhotoUrl(p)} alt={`Schadensfoto ${i + 1}`}
-                  className="w-full rounded-xl object-cover max-h-48" />
+                <button key={i} type="button" onClick={() => setLightboxIndex(i)} className="cursor-zoom-in">
+                  <img src={getPhotoUrl(p)} alt={`Schadensfoto ${i + 1}`}
+                    className="w-full rounded-xl object-cover max-h-48" />
+                </button>
               ))}
             </div>
+          )}
+          {lightboxIndex !== null && (
+            <ImageLightbox
+              urls={photoPaths.map(p => getPhotoUrl(p))}
+              index={lightboxIndex}
+              onClose={() => setLightboxIndex(null)}
+              onNext={() => setLightboxIndex(i => Math.min(photoPaths.length - 1, (i ?? 0) + 1))}
+              onPrev={() => setLightboxIndex(i => Math.max(0, (i ?? 0) - 1))}
+            />
           )}
         </div>
       )}
