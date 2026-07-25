@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
 export default function ImageLightbox({ urls, index, onClose, onNext, onPrev }: Props) {
   const hasPrev = index > 0
   const hasNext = index < urls.length - 1
+  const touchStartX = useRef<number | null>(null)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -23,14 +24,29 @@ export default function ImageLightbox({ urls, index, onClose, onNext, onPrev }: 
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose, onNext, onPrev, hasNext, hasPrev])
 
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    touchStartX.current = null
+    if (Math.abs(dx) < 40) return
+    if (dx < 0 && hasNext) onNext?.()
+    if (dx > 0 && hasPrev) onPrev?.()
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
       onClick={onClose}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 text-white/80 hover:text-white p-2"
+        className="absolute top-4 right-4 text-white/80 hover:text-white p-2 z-10"
       >
         <X size={24} />
       </button>
@@ -38,7 +54,7 @@ export default function ImageLightbox({ urls, index, onClose, onNext, onPrev }: 
       {hasPrev && (
         <button
           onClick={e => { e.stopPropagation(); onPrev?.() }}
-          className="absolute left-2 text-white/80 hover:text-white p-3"
+          className="absolute left-0 top-0 h-full px-3 flex items-center text-white/60 hover:text-white"
         >
           <ChevronLeft size={32} />
         </button>
@@ -55,7 +71,7 @@ export default function ImageLightbox({ urls, index, onClose, onNext, onPrev }: 
       {hasNext && (
         <button
           onClick={e => { e.stopPropagation(); onNext?.() }}
-          className="absolute right-2 text-white/80 hover:text-white p-3"
+          className="absolute right-0 top-0 h-full px-3 flex items-center text-white/60 hover:text-white"
         >
           <ChevronRight size={32} />
         </button>
