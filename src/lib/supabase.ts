@@ -1,6 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
-const url       = import.meta.env.VITE_SUPABASE_URL    as string
+// supabase-js appends '/rest/v1' (and '/storage/v1' etc.) to the base URL
+// itself. Tolerate a mis-pasted secret that already ends in a slash or a
+// trailing '/rest/v1' – otherwise every request 404s on a doubled '/rest/v1'.
+const rawUrl    = import.meta.env.VITE_SUPABASE_URL    as string
+const url       = (rawUrl ?? '').trim().replace(/\/+$/, '').replace(/\/rest\/v1$/, '')
 const key       = import.meta.env.VITE_SUPABASE_KEY    as string
 const appSecret = import.meta.env.VITE_APP_SECRET      as string | undefined
 
