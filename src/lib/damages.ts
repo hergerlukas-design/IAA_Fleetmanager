@@ -42,10 +42,28 @@ export const ZONE_LABEL_EN: Record<string, string> = {
   'Aufbau': 'Body',
   'Ladefläche': 'Load Floor',
   'Unterfahrschutz': 'Underrun Guard',
+  // Zugmaschinen-Grafik (Sattelzugmaschine / Lkw)
+  'Windschutzscheibe': 'Windshield',
+  'Kühlergrill': 'Grille',
+  'Dachblende': 'Roof Fairing',
+  'Kabinenrückwand': 'Cab Rear Wall',
+  'Sattelkupplung': 'Fifth Wheel',
+  'Kabinendach': 'Cab Roof',
+  'Chassis': 'Chassis',
+  'Chassis links': 'Chassis (left)',
+  'Chassis rechts': 'Chassis (right)',
+  'Tür links': 'Door (left)',
+  'Tür rechts': 'Door (right)',
+  'Seitenscheibe links': 'Side Window (left)',
+  'Seitenscheibe rechts': 'Side Window (right)',
+  'Trittstufe links': 'Step (left)',
+  'Trittstufe rechts': 'Step (right)',
+  'Tank links': 'Fuel Tank (left)',
+  'Tank rechts': 'Fuel Tank (right)',
 }
 
-/** Zusätzliche Lkw-spezifische Schadenszonen (über die Fahrzeug-Grafik hinaus). */
-export const TRUCK_ZONES = ['Kabine', 'Aufbau', 'Ladefläche', 'Unterfahrschutz'] as const
+/** Zusätzliche Schadenszonen als Buttons (für Aufbauten / Innenraum jenseits der Grafik). */
+export const TRUCK_ZONES = ['Innenraum', 'Aufbau', 'Ladefläche'] as const
 
 export const DAMAGE_TYPES = [
   'delle', 'kratzer', 'riss', 'steinschlag', 'fehlend', 'sonstiges',

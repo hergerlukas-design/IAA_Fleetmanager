@@ -10,7 +10,7 @@ import {
 } from '@/lib/damages'
 import { createProtocol } from '@/lib/protocols'
 import { supabase, ERR_FILE_TOO_LARGE } from '@/lib/supabase'
-import CarDamageSelector from '@/components/CarDamageSelector'
+import TruckDamageSelector from '@/components/TruckDamageSelector'
 import Modal from '@/components/Modal'
 import type { Fleet, VehiclePhoto } from '@/lib/types'
 
@@ -563,7 +563,7 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
                   </div>
                 </div>
 
-                <CarDamageSelector value={dmgPosition} onChange={setDmgPosition} />
+                <TruckDamageSelector value={dmgPosition} onChange={setDmgPosition} />
 
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">{t('damages.description')}</label>

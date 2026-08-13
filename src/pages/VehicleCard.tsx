@@ -25,7 +25,7 @@ import {
 import { createKmEntry } from '@/lib/kmHistory'
 import { fetchActiveFleets } from '@/lib/fleets'
 import { useAuth } from '@/contexts/useAuth'
-import CarDamageSelector from '@/components/CarDamageSelector'
+import TruckDamageSelector from '@/components/TruckDamageSelector'
 import KmLogSheet from '@/pages/KmLogSheet'
 import KmHistoryCard from '@/pages/KmHistoryCard'
 import type {
@@ -701,7 +701,7 @@ function SchadenCard({ vehicleId, damages, onRefresh }: {
             </div>
           </div>
 
-          <CarDamageSelector value={formPosition} onChange={setFormPosition} />
+          <TruckDamageSelector value={formPosition} onChange={setFormPosition} />
 
           <Field label={t('damages.description')}>
             <textarea value={formDesc} onChange={e => setFormDesc(e.target.value)} rows={2}
