@@ -38,7 +38,7 @@ jobs:
       - name: Ensure Fly app exists
         if: steps.guard.outputs.ready == 'true'
         run: |
-          flyctl apps create iaa-nutzfahrzeuge-fleet-manager \
+          flyctl apps create iaa-fleetmanager \
             --org "${{ github.event.inputs.org || 'personal' }}" || true
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
