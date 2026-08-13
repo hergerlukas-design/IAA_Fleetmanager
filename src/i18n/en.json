@@ -1,13 +1,15 @@
 {
-  "app_name": "CLX Fleetmanager",
+  "app_name": "IAA Nutzfahrzeuge",
   "nav": {
     "fleets": "Fleets",
-    "vehicles": "Vehicles",
+    "vehicles": "Trucks",
+    "trailers": "Trailers",
+    "gespanne": "Combos",
     "settings": "Settings"
   },
   "login": {
-    "title": "CLX Fleetmanager",
-    "subtitle": "Vehicle Registry & Intake",
+    "title": "IAA Nutzfahrzeuge",
+    "subtitle": "Vehicle & Trailer Registry",
     "name_label": "Your Name",
     "name_placeholder": "John Doe",
     "pin_label": "PIN",
@@ -57,6 +59,53 @@
     "created_by": "Created by",
     "status": "Status",
     "delete_confirm": "Permanently delete vehicle and all data?"
+  },
+  "trailers": {
+    "title": "Trailers",
+    "add": "Add Trailer",
+    "no_trailers": "No trailers yet.",
+    "license_plate": "Plate / ID",
+    "type": "Type",
+    "position": "Position (optional)",
+    "position_none": "No position",
+    "add_damage": "Log Damage",
+    "damage_description": "Damage description",
+    "damage_description_placeholder": "Describe the damage…",
+    "photos_hint": "Take photos of the trailer (multiple allowed).",
+    "no_photos": "No photos yet.",
+    "delete_confirm": "Permanently delete trailer and all data?",
+    "types": {
+      "anhaenger": "Drawbar Trailer",
+      "sattelauflieger": "Semi-Trailer",
+      "sonstiges": "Other"
+    },
+    "positions": {
+      "plane": "Tarpaulin",
+      "achse": "Axle",
+      "ladeflaeche": "Load Floor",
+      "deichsel": "Drawbar",
+      "aufbau": "Body",
+      "sonstiges": "Other"
+    }
+  },
+  "couplings": {
+    "title": "Coupling",
+    "coupled": "Coupled",
+    "couple": "Couple",
+    "couple_optional": "Couple trailer directly (optional)",
+    "decouple": "Decouple",
+    "decouple_confirm": "Really end this coupling?",
+    "not_coupled": "Currently not coupled.",
+    "no_vehicle": "No truck",
+    "select_vehicle": "Select truck…",
+    "select_trailer": "Select trailer…",
+    "since": "since",
+    "history": "Coupling history"
+  },
+  "gespanne": {
+    "title": "Combos",
+    "empty": "No active combos yet.",
+    "new": "Couple new combo"
   },
   "vehicle_card": {
     "back": "Back",

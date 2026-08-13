@@ -1,6 +1,12 @@
 import * as XLSX from 'xlsx'
 import type { jsPDF } from 'jspdf'
-import type { Vehicle, DamageRecord, IntakeProtocol } from './types'
+import type { Vehicle, DamageRecord, IntakeProtocol, Coupling } from './types'
+
+const TRAILER_TYPE_LABEL: Record<string, string> = {
+  anhaenger: 'Anhänger',
+  sattelauflieger: 'Sattelauflieger',
+  sonstiges: 'Sonstiges',
+}
 
 export async function savePdf(doc: jsPDF, filename: string): Promise<void> {
   const blob = doc.output('blob')
@@ -65,8 +71,42 @@ export function exportVehiclesToExcel(
 
   const ws = XLSX.utils.json_to_sheet(rows)
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Fahrzeuge')
+  XLSX.utils.book_append_sheet(wb, ws, 'Zugfahrzeuge')
 
   const date = new Date().toISOString().split('T')[0]
-  XLSX.writeFile(wb, `CLX_Fleetmanager_${date}.xlsx`)
+  XLSX.writeFile(wb, `IAA_Nutzfahrzeuge_${date}.xlsx`)
+}
+
+interface GespannRow {
+  Zugfahrzeug_Kennzeichen: string
+  Zugfahrzeug_FIN: string
+  Zugfahrzeug_Modell: string
+  Trailer_Kennzeichen: string
+  Trailer_Typ: string
+  Trailer_Modell: string
+  Gekoppelt_seit: string
+  Gekoppelt_bis: string
+  Status: string
+}
+
+/** Export einer Gespann-Liste (Zugfahrzeug + Trailer) nach Excel. */
+export function exportGespanneToExcel(couplings: Coupling[]) {
+  const rows: GespannRow[] = couplings.map((c) => ({
+    Zugfahrzeug_Kennzeichen: c.vehicle?.license_plate ?? '',
+    Zugfahrzeug_FIN:         c.vehicle?.vin ?? '',
+    Zugfahrzeug_Modell:      c.vehicle?.brand_model ?? '',
+    Trailer_Kennzeichen:     c.trailer?.license_plate ?? '',
+    Trailer_Typ:             c.trailer ? (TRAILER_TYPE_LABEL[c.trailer.trailer_type] ?? c.trailer.trailer_type) : '',
+    Trailer_Modell:          c.trailer?.brand_model ?? '',
+    Gekoppelt_seit:          c.gekoppelt_seit ? new Date(c.gekoppelt_seit).toLocaleString('de-CH') : '',
+    Gekoppelt_bis:           c.gekoppelt_bis ? new Date(c.gekoppelt_bis).toLocaleString('de-CH') : 'aktiv',
+    Status:                  c.gekoppelt_bis ? 'entkoppelt' : 'gekoppelt',
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Gespanne')
+
+  const date = new Date().toISOString().split('T')[0]
+  XLSX.writeFile(wb, `IAA_Gespanne_${date}.xlsx`)
 }

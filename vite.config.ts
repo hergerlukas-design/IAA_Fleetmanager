@@ -12,9 +12,9 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'CLX Fleetmanager',
-        short_name: 'CLX Fleet',
-        description: 'Fahrzeugkartei und Annahmeprotokolle für Flottenmanagement',
+        name: 'IAA Nutzfahrzeuge Fleet Manager',
+        short_name: 'IAA Fleet',
+        description: 'Fahrzeug- und Trailerannahme sowie Gespann-Verwaltung für die IAA Nutzfahrzeuge',
         theme_color: '#1e40af',
         background_color: '#ffffff',
         display: 'standalone',

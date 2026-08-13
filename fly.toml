@@ -1,7 +1,7 @@
-# Fly.io config – generated for CLX Fleetmanager
-# Run: fly launch --name clx-fleetmanager (then fly deploy)
+# Fly.io config – IAA Nutzfahrzeuge Fleet Manager
+# Run: fly launch --name iaa-nutzfahrzeuge-fleet-manager (then fly deploy)
 
-app = "clx-fleetmanager"
+app = "iaa-nutzfahrzeuge-fleet-manager"
 primary_region = "fra"
 
 [build]

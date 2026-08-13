@@ -1,7 +1,7 @@
 {
-  "name": "clx-fleetmanager",
+  "name": "iaa-nutzfahrzeuge-fleet-manager",
   "private": true,
-  "version": "1.2.1",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

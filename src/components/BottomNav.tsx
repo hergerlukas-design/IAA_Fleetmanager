@@ -1,14 +1,16 @@
 import { NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Layers, Car, Settings } from 'lucide-react'
+import { Layers, Truck, Container, Link2, Settings } from 'lucide-react'
 
 export default function BottomNav() {
   const { t } = useTranslation()
 
   const items = [
-    { to: '/fleets',   icon: Layers, label: t('nav.fleets')   },
-    { to: '/vehicles', icon: Car,    label: t('nav.vehicles')  },
-    { to: '/settings', icon: Settings, label: t('nav.settings') },
+    { to: '/fleets',   icon: Layers,    label: t('nav.fleets')   },
+    { to: '/vehicles', icon: Truck,     label: t('nav.vehicles') },
+    { to: '/trailers', icon: Container, label: t('nav.trailers') },
+    { to: '/gespanne', icon: Link2,     label: t('nav.gespanne') },
+    { to: '/settings', icon: Settings,  label: t('nav.settings') },
   ]
 
   return (

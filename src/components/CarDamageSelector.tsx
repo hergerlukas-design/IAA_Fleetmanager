@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ZONE_LABEL_EN } from '@/lib/damages'
+import { ZONE_LABEL_EN, TRUCK_ZONES } from '@/lib/damages'
+
+const TRUCK_ZONE_EMOJI: Record<string, string> = {
+  'Kabine': '🚚', 'Aufbau': '📦', 'Ladefläche': '🛻', 'Unterfahrschutz': '🛡️',
+}
 
 type ViewId = 'top' | 'front' | 'back' | 'left' | 'right'
 
@@ -296,6 +300,20 @@ export default function CarDamageSelector({ value, onChange }: Props) {
         }`}>
         {lang === 'de' ? '🪑 Innenraum' : '🪑 Interior'}
       </button>
+
+      {/* Lkw-spezifische Zonen */}
+      <div className="grid grid-cols-2 gap-2">
+        {TRUCK_ZONES.map(zone => (
+          <button key={zone} type="button" onClick={() => onChange(zone)}
+            className={`py-2 rounded-xl border text-sm font-medium transition-colors ${
+              sel === zone
+                ? 'bg-amber-100 border-amber-400 text-amber-800'
+                : 'border-gray-200 text-gray-500 hover:border-blue-400'
+            }`}>
+            {TRUCK_ZONE_EMOJI[zone]} {lang === 'en' ? ZONE_LABEL_EN[zone] : zone}
+          </button>
+        ))}
+      </div>
 
       {/* Selected label */}
       {sel && (

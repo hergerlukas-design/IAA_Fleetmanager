@@ -17,7 +17,7 @@ export const supabase = createClient(url || 'https://placeholder.supabase.co', k
   },
 })
 
-export const STORAGE_BUCKET = 'clx-assets'
+export const STORAGE_BUCKET = 'iaa-assets'
 
 export function getPhotoUrl(storagePath: string, bustCache = false): string {
   const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath)

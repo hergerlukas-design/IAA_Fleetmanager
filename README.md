@@ -1,73 +1,82 @@
-# React + TypeScript + Vite
+# IAA Nutzfahrzeuge – Fleet Manager
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+PWA zur Fahrzeug- und Trailerannahme für die **IAA Nutzfahrzeuge** (Trucks/Lkw).
+Verwaltet Zugfahrzeug-Trailer-Kombinationen („Gespanne"), die im Projektverlauf
+mehrfach neu gekoppelt werden können.
 
-Currently, two official plugins are available:
+Basiert auf der Architektur von **CLX Fleetmanager** / **ADE Fleet Manager**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features (MVP)
 
-## React Compiler
+- **Fahrzeugannahme** (Zugfahrzeug): Kennzeichen, FIN/VIN, Fotos, strukturierte
+  Damage-Card inkl. Lkw-spezifischer Zonen (Kabine, Aufbau, Ladefläche,
+  Unterfahrschutz).
+- **Trailerannahme**: Kennzeichen/ID, Typ (Anhänger / Sattelauflieger / Sonstiges),
+  Fotos, schlanke Schadenserfassung (Freitext + optionales Positions-Dropdown).
+- **Kopplung / Gespanne**: Trailer bei der Annahme direkt oder später über die
+  Gespann-Ansicht koppeln/entkoppeln – mit vollständiger Kopplungshistorie.
+- **Kartei-Ansicht**: je Zugfahrzeug und je Trailer, inkl. aktueller/historischer
+  Kopplung.
+- **Export**: Excel je Fahrzeugliste bzw. je Gespann (Zugfahrzeug + gekoppelter
+  Trailer).
+- Zweisprachig (DE/EN), PWA-fähig (offline-Installierbar).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech-Stack
 
-## Expanding the ESLint configuration
+- React 19, TypeScript, Vite
+- Tailwind CSS 4
+- Supabase (DB + Auth-Header + Storage)
+- Fly.io (Deployment)
+- GitHub Actions: Claude-Code-Issue-Automation (`@claude`) + Auto-Deploy on merge
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Datenmodell
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| Tabelle           | Zweck                                                        |
+| ----------------- | ----------------------------------------------------------- |
+| `vehicles`        | Zugfahrzeuge (Trucks) – FIN, Kennzeichen, Status, Schäden   |
+| `trailers`        | Anhänger / Sattelauflieger – Kennzeichen, Typ               |
+| `trailer_photos`  | Fotos je Trailer                                            |
+| `trailer_damages` | Schlanke Schadenserfassung (Freitext + grobe Position)      |
+| `couplings`       | Relationstabelle Zugfahrzeug ↔ Trailer mit Zeitstempeln     |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Kopplungen werden nicht als 1:1-Fremdschlüssel abgebildet, sondern als eigene
+Relationstabelle mit `gekoppelt_seit` / `gekoppelt_bis` (nullable) – so lässt sich
+die vollständige Historie mehrfacher Umkopplungen abbilden.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Entwicklung
+
+```bash
+npm install
+npm run dev      # Dev-Server
+npm run build    # tsc + vite build
+npm run lint     # ESLint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Umgebungsvariablen (Build-Secrets)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Variable             | Zweck                                        |
+| -------------------- | -------------------------------------------- |
+| `VITE_SUPABASE_URL`  | Supabase-Projekt-URL                         |
+| `VITE_SUPABASE_KEY`  | Supabase Anon/Publishable Key                |
+| `VITE_APP_SECRET`    | Wert des `x-app-secret`-Headers (RLS)        |
+| `VITE_APP_PASSWORD`  | App-Passwort (Login)                         |
+| `VITE_ADMIN_PIN`     | Admin-PIN                                     |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Supabase-Setup
+
+1. Neues Supabase-Projekt anlegen.
+2. Migrationen aus `supabase/migrations/` in Reihenfolge im SQL-Editor ausführen.
+3. Storage-Bucket **`iaa-assets`** (private) anlegen.
+4. App-Secret setzen: `INSERT INTO _app_secret (secret) VALUES ('<geheim>');`
+   – denselben Wert als `VITE_APP_SECRET` hinterlegen.
+
+## Deployment (Fly.io)
+
+Auto-Deploy via GitHub Action bei Merge/Push auf `main` (siehe
+`.github/workflows/deploy.yml`). Erforderliche Repo-Secrets: `FLY_API_TOKEN`
+sowie alle `VITE_*`-Build-Args.
+
+## Bug-Reports / Feature-Requests
+
+Über GitHub Issues mit `@claude`-Mention – die Claude-Code-Action
+(`.github/workflows/claude.yml`) bearbeitet die Anfrage automatisch.

@@ -1,13 +1,15 @@
 {
-  "app_name": "CLX Fleetmanager",
+  "app_name": "IAA Nutzfahrzeuge",
   "nav": {
     "fleets": "Flotten",
-    "vehicles": "Fahrzeuge",
+    "vehicles": "Zugfahrzeuge",
+    "trailers": "Trailer",
+    "gespanne": "Gespanne",
     "settings": "Einstellungen"
   },
   "login": {
-    "title": "CLX Fleetmanager",
-    "subtitle": "Fahrzeugkartei & Annahme",
+    "title": "IAA Nutzfahrzeuge",
+    "subtitle": "Fahrzeug- & Trailerkartei",
     "name_label": "Dein Name",
     "name_placeholder": "Max Mustermann",
     "pin_label": "PIN",
@@ -57,6 +59,53 @@
     "created_by": "Erstellt von",
     "status": "Status",
     "delete_confirm": "Fahrzeug und alle Daten endgültig löschen?"
+  },
+  "trailers": {
+    "title": "Trailer",
+    "add": "Trailer anlegen",
+    "no_trailers": "Keine Trailer vorhanden.",
+    "license_plate": "Kennzeichen / ID",
+    "type": "Typ",
+    "position": "Position (optional)",
+    "position_none": "Ohne Positionsangabe",
+    "add_damage": "Schaden erfassen",
+    "damage_description": "Schadensbeschreibung",
+    "damage_description_placeholder": "Schaden frei beschreiben…",
+    "photos_hint": "Fotos des Trailers aufnehmen (mehrere möglich).",
+    "no_photos": "Keine Fotos vorhanden.",
+    "delete_confirm": "Trailer und alle Daten endgültig löschen?",
+    "types": {
+      "anhaenger": "Anhänger",
+      "sattelauflieger": "Sattelauflieger",
+      "sonstiges": "Sonstiges"
+    },
+    "positions": {
+      "plane": "Plane",
+      "achse": "Achse",
+      "ladeflaeche": "Ladefläche",
+      "deichsel": "Deichsel",
+      "aufbau": "Aufbau",
+      "sonstiges": "Sonstiges"
+    }
+  },
+  "couplings": {
+    "title": "Kopplung",
+    "coupled": "Gekoppelt",
+    "couple": "Koppeln",
+    "couple_optional": "Trailer direkt koppeln (optional)",
+    "decouple": "Entkoppeln",
+    "decouple_confirm": "Kopplung wirklich beenden?",
+    "not_coupled": "Aktuell nicht gekoppelt.",
+    "no_vehicle": "Kein Zugfahrzeug",
+    "select_vehicle": "Zugfahrzeug wählen…",
+    "select_trailer": "Trailer wählen…",
+    "since": "seit",
+    "history": "Kopplungshistorie"
+  },
+  "gespanne": {
+    "title": "Gespanne",
+    "empty": "Noch keine aktiven Gespanne.",
+    "new": "Neues Gespann koppeln"
   },
   "vehicle_card": {
     "back": "Zurück",

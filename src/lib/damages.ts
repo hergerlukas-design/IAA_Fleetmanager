@@ -37,7 +37,15 @@ export const ZONE_LABEL_EN: Record<string, string> = {
   'Reifen hinten rechts': 'Rear Tire (right)',
   'Felge hinten rechts': 'Rear Rim (right)',
   'Innenraum': 'Interior',
+  // Lkw-spezifische Zonen (IAA Nutzfahrzeuge)
+  'Kabine': 'Cabin',
+  'Aufbau': 'Body',
+  'Ladefläche': 'Load Floor',
+  'Unterfahrschutz': 'Underrun Guard',
 }
+
+/** Zusätzliche Lkw-spezifische Schadenszonen (über die Fahrzeug-Grafik hinaus). */
+export const TRUCK_ZONES = ['Kabine', 'Aufbau', 'Ladefläche', 'Unterfahrschutz'] as const
 
 export const DAMAGE_TYPES = [
   'delle', 'kratzer', 'riss', 'steinschlag', 'fehlend', 'sonstiges',

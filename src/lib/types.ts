@@ -90,6 +90,60 @@ export interface FleetTodo {
   created_at: string
 }
 
+// ─── Trailer (Anhänger / Sattelauflieger) ────────────────────────────────────
+
+export type TrailerType = 'anhaenger' | 'sattelauflieger' | 'sonstiges'
+
+/** Grobe Positionsangabe der Trailer-Schadenserfassung (Vorfilter). */
+export type TrailerDamagePosition =
+  | 'plane' | 'achse' | 'ladeflaeche' | 'deichsel' | 'aufbau' | 'sonstiges'
+
+export interface Trailer {
+  id: string
+  fleet_id: string | null
+  license_plate: string | null
+  trailer_type: TrailerType
+  brand_model: string | null
+  notes: string | null
+  status: 'in_bearbeitung' | 'abgeschlossen'
+  created_at: string
+  created_by: string | null
+  fleet?: Fleet
+}
+
+export interface TrailerPhoto {
+  id: string
+  trailer_id: string
+  storage_path: string
+  taken_by: string | null
+  created_at: string
+}
+
+export interface TrailerDamage {
+  id: string
+  trailer_id: string
+  position: TrailerDamagePosition | null
+  description: string | null
+  storage_path: string | null
+  created_by: string | null
+  created_at: string
+}
+
+// ─── Coupling (Kopplung / Gespann) ────────────────────────────────────────────
+
+export interface Coupling {
+  id: string
+  vehicle_id: string
+  trailer_id: string
+  gekoppelt_seit: string
+  gekoppelt_bis: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  vehicle?: Vehicle
+  trailer?: Trailer
+}
+
 export type VehicleSection = 'basisdaten' | 'fotos' | 'schaeden' | 'protokoll'
 
 export interface SectionPresence {
