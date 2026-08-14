@@ -757,28 +757,29 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
               </div>
             </div>
 
-            {/* Fotos */}
+            {/* Fotos – Raster mit dauerhaften Hinzufügen-Kacheln (mehrere möglich) */}
             <div>
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">{t('create_wizard.trailer_photos')}</p>
-              {trailerPhotos.length > 0 && (
-                <div className="grid grid-cols-3 gap-1.5 mb-2">
-                  {trailerPhotos.map((f, i) => (
-                    <DmgFilePreview key={i} file={f} onRemove={() => setTrailerPhotos(fs => fs.filter((_, j) => j !== i))} />
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-2">
-                <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
-                  <input type="file" accept="image/*" capture="environment" className="sr-only"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) setTrailerPhotos(fs => [...fs, f]); e.target.value = '' }} />
-                  <Camera size={14} /> {t('damages.photo_camera')}
-                </label>
-                <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
+              <div className="grid grid-cols-3 gap-1.5">
+                {trailerPhotos.map((f, i) => (
+                  <DmgFilePreview key={i} file={f} onRemove={() => setTrailerPhotos(fs => fs.filter((_, j) => j !== i))} />
+                ))}
+                {/* Kachel: aus Galerie hinzufügen (mehrere) */}
+                <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-400 cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
                   <input type="file" accept="image/*" multiple className="sr-only"
                     onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) setTrailerPhotos(fs => [...fs, ...files]); e.target.value = '' }} />
-                  <Plus size={14} /> {t('damages.photo_gallery')}
+                  <Plus size={24} />
+                  <span className="text-[10px] font-medium leading-none">{t('damages.photo_gallery')}</span>
+                </label>
+                {/* Kachel: Foto aufnehmen */}
+                <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-400 cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
+                  <input type="file" accept="image/*" capture="environment" className="sr-only"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) setTrailerPhotos(fs => [...fs, f]); e.target.value = '' }} />
+                  <Camera size={20} />
+                  <span className="text-[10px] font-medium leading-none">{t('damages.photo_camera')}</span>
                 </label>
               </div>
+              <p className="text-[11px] text-gray-400 mt-1">{t('trailers.photos_hint')}</p>
             </div>
 
             {/* Schäden – ohne visuelle Karte: Art, Stärke, Beschreibung, Foto */}
