@@ -271,7 +271,7 @@ export default function Packliste() {
                 <h2 className="px-1 mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
                   {cat === '__none__' ? t('packing.no_category') : cat}
                 </h2>
-                <ul className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <ul className="bg-white rounded-2xl border border-gray-100 shadow-sm">
                   {groupItems.map((item) => (
                     <PackingRow
                       key={item.id}
@@ -309,6 +309,8 @@ function PackingRow({
   const Icon = meta.icon
   const done = item.status === 'gepackt'
   const menuRef = useRef<HTMLDivElement>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const [openUp, setOpenUp] = useState(false)
 
   // Klick ausserhalb schliesst das Status-Menü
   useEffect(() => {
@@ -319,6 +321,14 @@ function PackingRow({
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
   }, [menuOpen, onToggleMenu])
+
+  // Bei zu wenig Platz nach unten (z. B. letzte Zeile) nach oben aufklappen
+  useEffect(() => {
+    if (menuOpen && btnRef.current) {
+      const spaceBelow = window.innerHeight - btnRef.current.getBoundingClientRect().bottom
+      setOpenUp(spaceBelow < 220)
+    }
+  }, [menuOpen])
 
   return (
     <li className="flex items-center gap-3 px-3 py-2.5 border-b border-gray-50 last:border-b-0">
@@ -334,6 +344,7 @@ function PackingRow({
       {/* Status-Pille mit Dropdown */}
       <div ref={menuRef} className="relative flex-shrink-0">
         <button
+          ref={btnRef}
           onClick={onToggleMenu}
           className={`flex items-center gap-1 pl-2 pr-1.5 py-1 rounded-full text-xs font-medium ${meta.chip}`}
         >
@@ -343,7 +354,9 @@ function PackingRow({
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 top-full mt-1 z-20 w-36 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+          <div className={`absolute right-0 z-50 w-36 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden ${
+            openUp ? 'bottom-full mb-1' : 'top-full mt-1'
+          }`}>
             {STATUS_ORDER.map((s) => {
               const SIcon = STATUS_META[s].icon
               const active = s === item.status
