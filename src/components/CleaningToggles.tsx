@@ -24,17 +24,18 @@ function Pill({ active, label, disabled, onClick }: {
 }
 
 /** Reinigungs-Schalter (innen/außen). `showInside=false` blendet den Innen-Schalter aus (Trailer). */
-export default function CleaningToggles({ inside, outside, showInside = true, disabled, onToggle }: {
+export default function CleaningToggles({ inside, outside, showInside = true, hideLabel = false, disabled, onToggle }: {
   inside: boolean
   outside: boolean
   showInside?: boolean
+  hideLabel?: boolean
   disabled?: boolean
   onToggle: (kind: CleaningKind, next: boolean) => void
 }) {
   const { t } = useTranslation()
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-[11px] text-gray-400">{t('cleaning.label')}</span>
+      {!hideLabel && <span className="text-[11px] text-gray-400">{t('cleaning.label')}</span>}
       {showInside && (
         <Pill active={inside} label={t('cleaning.inside')} disabled={disabled}
           onClick={() => onToggle('inside', !inside)} />

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Plus, Search, Car, ArrowUpDown, Gauge, ChevronDown, FileText, Lock, X, CheckSquare, Container, Link2 } from 'lucide-react'
+import { ArrowLeft, Plus, Search, Car, ArrowUpDown, Gauge, ChevronDown, FileText, Lock, X, CheckSquare, Container, Link2, Truck } from 'lucide-react'
 import Layout from '@/components/Layout'
 import { useAuth } from '@/contexts/useAuth'
 import { fetchFleet } from '@/lib/fleets'
@@ -381,10 +381,10 @@ export default function FleetDetail() {
     }
   }
 
-  const renderVehicle = (v: Vehicle, inGespann = false) => {
+  const renderVehicle = (v: Vehicle) => {
     const canConfirm = isAdmin && v.status === 'in_bearbeitung' && !v.protocol_submitted
     const c = trailerByVehicle[v.id]
-    const coupledLabel = !inGespann && c?.trailer ? (c.trailer.license_plate || t('couplings.coupled')) : undefined
+    const coupledLabel = c?.trailer ? (c.trailer.license_plate || t('couplings.coupled')) : undefined
     return (
       <VehicleRow
         key={v.id}
@@ -403,9 +403,76 @@ export default function FleetDetail() {
     )
   }
 
-  const renderTrailer = (tr: Trailer, inGespann = false) => {
+  const renderGespann = ({ vehicle, trailer, coupling }: { vehicle: Vehicle; trailer: Trailer; coupling: Coupling }) => {
+    const vConfirmable = isAdmin && vehicle.status === 'in_bearbeitung' && !vehicle.protocol_submitted
+    const tConfirmable = isAdmin && !trailer.annahme_confirmed
+    return (
+      <div key={coupling.id} className="rounded-2xl border border-gray-100 bg-white overflow-hidden">
+        {/* Kombi-Zeile: Fahrzeug ↔ Trailer */}
+        <div className="flex items-center gap-2 px-4 py-3">
+          <button onClick={() => navigate(`/vehicle/${vehicle.id}`)}
+            className="flex-1 flex items-center gap-2 min-w-0 text-left active:opacity-70">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <Truck size={18} className="text-blue-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-gray-900 truncate">{vehicle.license_plate || vehicle.vin || '—'}</p>
+              <p className="text-xs text-gray-400 truncate">{vehicle.brand_model || '—'}</p>
+            </div>
+          </button>
+          <Link2 size={18} className="text-gray-300 flex-shrink-0" />
+          <button onClick={() => navigate(`/trailer/${trailer.id}`)}
+            className="flex-1 flex items-center gap-2 min-w-0 text-left justify-end active:opacity-70">
+            <div className="min-w-0 text-right">
+              <p className="font-semibold text-gray-900 truncate">{trailer.license_plate || '—'}</p>
+              <p className="text-xs text-gray-400 truncate">{t(`trailers.types.${trailer.trailer_type}`)}</p>
+            </div>
+            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <Container size={18} className="text-gray-400" />
+            </div>
+          </button>
+        </div>
+
+        {/* Reinigung / Annahme je Seite */}
+        <div className="border-t border-gray-100 px-4 py-2 space-y-1.5">
+          <div className="flex items-center gap-2 min-h-[30px]">
+            <Truck size={13} className="text-gray-400 flex-shrink-0" />
+            {vehicle.protocol_submitted && isUser ? (
+              <CleaningToggles hideLabel
+                inside={!!vehicle.cleaning_inside} outside={!!vehicle.cleaning_outside}
+                onToggle={(kind, next) => toggleVehicleCleaning(vehicle, kind, next)} />
+            ) : vConfirmable ? (
+              <button onClick={() => confirmVehicle(vehicle)} disabled={confirmingId === vehicle.id}
+                className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[11px] font-medium hover:bg-blue-100 disabled:opacity-50 flex items-center gap-1">
+                <Lock size={11} /> {t('protocol.annahme_confirm')}
+              </button>
+            ) : (
+              <span className="text-[11px] text-gray-300">—</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 min-h-[30px]">
+            <Container size={13} className="text-gray-400 flex-shrink-0" />
+            {trailer.annahme_confirmed && isUser ? (
+              <CleaningToggles hideLabel showInside={false}
+                inside={false} outside={!!trailer.cleaning_outside}
+                onToggle={(_, next) => toggleTrailerCleaning(trailer, next)} />
+            ) : tConfirmable ? (
+              <button onClick={() => confirmTrailer(trailer)} disabled={confirmingId === trailer.id}
+                className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[11px] font-medium hover:bg-blue-100 disabled:opacity-50 flex items-center gap-1">
+                <Lock size={11} /> {t('protocol.annahme_confirm')}
+              </button>
+            ) : (
+              <span className="text-[11px] text-gray-300">—</span>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderTrailer = (tr: Trailer) => {
     const c = vehicleByTrailer[tr.id]
-    const coupledLabel = !inGespann && c?.vehicle ? (c.vehicle.license_plate || c.vehicle.vin || t('couplings.coupled')) : undefined
+    const coupledLabel = c?.vehicle ? (c.vehicle.license_plate || c.vehicle.vin || t('couplings.coupled')) : undefined
     const canConfirm = isAdmin && !tr.annahme_confirmed
     return (
       <TrailerRow
@@ -596,16 +663,8 @@ export default function FleetDetail() {
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1 mb-1.5">
               {t('gespanne.title')}
             </h3>
-            <div className="space-y-3">
-              {gespanneToShow.map(({ vehicle, trailer, coupling }) => (
-                <div key={coupling.id} className="rounded-2xl border-2 border-blue-100 bg-blue-50/40 p-2 space-y-2">
-                  <div className="flex items-center gap-1.5 px-1 pt-0.5 text-[11px] font-semibold text-blue-600 uppercase tracking-wide">
-                    <Link2 size={13} /> {t('gespanne.title')}
-                  </div>
-                  {renderVehicle(vehicle, true)}
-                  {renderTrailer(trailer, true)}
-                </div>
-              ))}
+            <div className="space-y-2">
+              {gespanneToShow.map(g => renderGespann(g))}
             </div>
           </div>
         )}
