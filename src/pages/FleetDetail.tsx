@@ -153,6 +153,62 @@ function VehicleRow({ vehicle, onClick, onAddKm, onConfirm, confirming, selectio
   )
 }
 
+function TrailerRow({ trailer, coupledLabel, onClick, onConfirm, confirming, onToggleCleaning }: {
+  trailer: Trailer
+  coupledLabel?: string
+  onClick: () => void
+  onConfirm?: () => void
+  confirming?: boolean
+  onToggleCleaning?: (next: boolean) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white overflow-hidden">
+      <button onClick={onClick}
+        className="w-full px-4 py-3 text-left flex items-center gap-3 active:opacity-70">
+        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+          <Container size={20} className="text-gray-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-900 truncate">{trailer.license_plate || '—'}</p>
+          <p className="text-xs text-gray-400 truncate">
+            {t(`trailers.types.${trailer.trailer_type}`)}{trailer.brand_model ? ` · ${trailer.brand_model}` : ''}
+          </p>
+          {coupledLabel && (
+            <p className="text-[11px] text-blue-500 truncate flex items-center gap-1">
+              <Link2 size={10} /> {coupledLabel}
+            </p>
+          )}
+        </div>
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${STATUS_COLORS[trailer.status]}`}>
+          {t(`fleets.status.${trailer.status}`)}
+        </span>
+      </button>
+
+      {onConfirm && (
+        <div className="px-4 pb-2 flex">
+          <button onClick={onConfirm} disabled={confirming}
+            className="mx-auto px-5 py-2 rounded-lg bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 disabled:opacity-50 transition-colors flex items-center gap-1.5">
+            {confirming ? t('common.loading') : <><Lock size={12} /> {t('protocol.annahme_confirm')}</>}
+          </button>
+        </div>
+      )}
+
+      {/* Reinigung (nur außen) – erst nach bestätigter Annahme */}
+      {trailer.annahme_confirmed && onToggleCleaning && (
+        <div className="px-4 pb-2.5">
+          <CleaningToggles
+            inside={false}
+            outside={!!trailer.cleaning_outside}
+            showInside={false}
+            onToggle={(_, next) => onToggleCleaning(next)}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function FleetDetail() {
   const { id }        = useParams<{ id: string }>()
   const { t }         = useTranslation()
@@ -235,26 +291,7 @@ export default function FleetDetail() {
     }
   }, [logbookOpen, isAdmin, vehicles, kmSummary])
 
-  const filtered = vehicles
-    .filter((v) => {
-      if (onlyInBearbeitung && v.status !== 'in_bearbeitung') return false
-      const q = query.toLowerCase()
-      return !q || (
-        v.license_plate?.toLowerCase().includes(q) ||
-        v.vin?.toLowerCase().includes(q) ||
-        v.brand_model?.toLowerCase().includes(q)
-      )
-    })
-    .sort((a, b) => {
-      if (sortBy === 'newest') {
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      }
-      const ka = a.license_plate || a.vin || ''
-      const kb = b.license_plate || b.vin || ''
-      return ka.localeCompare(kb, 'de', { numeric: true, sensitivity: 'base' })
-    })
-
-  // Aktive Kopplungen → Gespanne sichtbar machen
+  // Aktive Kopplungen → Gespanne
   const trailerByVehicle: Record<string, Coupling> = {}
   const vehicleByTrailer: Record<string, Coupling> = {}
   for (const c of couplings) {
@@ -262,15 +299,46 @@ export default function FleetDetail() {
     vehicleByTrailer[c.trailer_id] = c
   }
 
-  const filteredTrailers = trailers
-    .filter((tr) => {
-      const q = query.toLowerCase()
-      return !q || (
-        tr.license_plate?.toLowerCase().includes(q) ||
-        tr.brand_model?.toLowerCase().includes(q)
-      )
-    })
-    .sort((a, b) => (a.license_plate || '').localeCompare(b.license_plate || '', 'de', { numeric: true, sensitivity: 'base' }))
+  const q = query.toLowerCase()
+  const matchesV = (v: Vehicle) => !q || !!(
+    v.license_plate?.toLowerCase().includes(q) || v.vin?.toLowerCase().includes(q) || v.brand_model?.toLowerCase().includes(q))
+  const matchesT = (tr: Trailer) => !q || !!(
+    tr.license_plate?.toLowerCase().includes(q) || tr.brand_model?.toLowerCase().includes(q))
+  const vSort = (a: Vehicle, b: Vehicle) => sortBy === 'newest'
+    ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    : (a.license_plate || a.vin || '').localeCompare(b.license_plate || b.vin || '', 'de', { numeric: true, sensitivity: 'base' })
+  const tSort = (a: Trailer, b: Trailer) =>
+    (a.license_plate || '').localeCompare(b.license_plate || '', 'de', { numeric: true, sensitivity: 'base' })
+
+  // Gespanne = Flotten-Fahrzeug + gekoppelter Flotten-Trailer als eine Einheit
+  const trailerIdSet = new Set(trailers.map(tr => tr.id))
+  const gespannVIds = new Set<string>()
+  const gespannTIds = new Set<string>()
+  const gespanne: { vehicle: Vehicle; trailer: Trailer; coupling: Coupling }[] = []
+  for (const v of vehicles) {
+    const c = trailerByVehicle[v.id]
+    if (c && trailerIdSet.has(c.trailer_id)) {
+      const tr = trailers.find(x => x.id === c.trailer_id)
+      if (tr) {
+        gespanne.push({ vehicle: v, trailer: tr, coupling: c })
+        gespannVIds.add(v.id)
+        gespannTIds.add(tr.id)
+      }
+    }
+  }
+
+  const gespanneToShow = gespanne
+    .filter(g => (matchesV(g.vehicle) || matchesT(g.trailer)) && (!onlyInBearbeitung || g.vehicle.status === 'in_bearbeitung'))
+    .sort((a, b) => vSort(a.vehicle, b.vehicle))
+  const singleVehicles = vehicles
+    .filter(v => !gespannVIds.has(v.id) && matchesV(v) && (!onlyInBearbeitung || v.status === 'in_bearbeitung'))
+    .sort(vSort)
+  const singleTrailers = trailers
+    .filter(tr => !gespannTIds.has(tr.id) && matchesT(tr))
+    .sort(tSort)
+
+  const totalItems = vehicles.length + trailers.length
+  const totalShown = gespanneToShow.length + singleVehicles.length + singleTrailers.length
 
   async function toggleVehicleCleaning(v: Vehicle, kind: 'inside' | 'outside', next: boolean) {
     const patch = kind === 'inside' ? { cleaning_inside: next } : { cleaning_outside: next }
@@ -300,6 +368,56 @@ export default function FleetDetail() {
     } finally {
       setConfirmingId(null)
     }
+  }
+
+  async function confirmVehicle(v: Vehicle) {
+    if (!confirm(t('protocol.annahme_confirm_dialog'))) return
+    setConfirmingId(v.id)
+    try {
+      await confirmAnnahmeByVehicleId(v.id, userName || '')
+      await load()
+    } finally {
+      setConfirmingId(null)
+    }
+  }
+
+  const renderVehicle = (v: Vehicle, inGespann = false) => {
+    const canConfirm = isAdmin && v.status === 'in_bearbeitung' && !v.protocol_submitted
+    const c = trailerByVehicle[v.id]
+    const coupledLabel = !inGespann && c?.trailer ? (c.trailer.license_plate || t('couplings.coupled')) : undefined
+    return (
+      <VehicleRow
+        key={v.id}
+        vehicle={v}
+        coupledLabel={coupledLabel}
+        onClick={() => navigate(`/vehicle/${v.id}`)}
+        onAddKm={() => setAddKmVehicle(v)}
+        onConfirm={!selectionMode && canConfirm ? () => confirmVehicle(v) : undefined}
+        onToggleCleaning={isUser ? (kind, next) => toggleVehicleCleaning(v, kind, next) : undefined}
+        confirming={confirmingId === v.id}
+        selectionMode={selectionMode}
+        selected={selectedIds.has(v.id)}
+        onLongPress={isAdmin && canConfirm ? () => enterSelectionMode(v.id) : undefined}
+        onToggleSelect={() => toggleSelect(v.id)}
+      />
+    )
+  }
+
+  const renderTrailer = (tr: Trailer, inGespann = false) => {
+    const c = vehicleByTrailer[tr.id]
+    const coupledLabel = !inGespann && c?.vehicle ? (c.vehicle.license_plate || c.vehicle.vin || t('couplings.coupled')) : undefined
+    const canConfirm = isAdmin && !tr.annahme_confirmed
+    return (
+      <TrailerRow
+        key={tr.id}
+        trailer={tr}
+        coupledLabel={coupledLabel}
+        onClick={() => navigate(`/trailer/${tr.id}`)}
+        onConfirm={canConfirm ? () => confirmTrailer(tr) : undefined}
+        confirming={confirmingId === tr.id}
+        onToggleCleaning={isUser ? (next) => toggleTrailerCleaning(tr, next) : undefined}
+      />
+    )
   }
 
   async function exportFleetPdf() {
@@ -464,103 +582,56 @@ export default function FleetDetail() {
           </div>
         )}
 
-        {!loading && vehicles.length === 0 && (
+        {!loading && totalItems === 0 && (
           <p className="text-center text-gray-400 py-12">{t('vehicles.no_vehicles')}</p>
         )}
 
-        {!loading && vehicles.length > 0 && filtered.length === 0 && (
+        {!loading && totalItems > 0 && totalShown === 0 && (
           <p className="text-center text-gray-400 py-8">{t('vehicles.no_results')}</p>
         )}
 
-        {filtered.map((v) => {
-          const canConfirm = isAdmin && v.status === 'in_bearbeitung' && !v.protocol_submitted
-          const coupling = trailerByVehicle[v.id]
-          const coupledLabel = coupling?.trailer
-            ? (coupling.trailer.license_plate || t('couplings.coupled'))
-            : undefined
-          return (
-            <VehicleRow
-              key={v.id}
-              vehicle={v}
-              coupledLabel={coupledLabel}
-              onClick={() => navigate(`/vehicle/${v.id}`)}
-              onAddKm={() => setAddKmVehicle(v)}
-              onConfirm={!selectionMode && canConfirm ? async () => {
-                if (!confirm(t('protocol.annahme_confirm_dialog'))) return
-                setConfirmingId(v.id)
-                try {
-                  await confirmAnnahmeByVehicleId(v.id, userName || '')
-                  await load()
-                } finally {
-                  setConfirmingId(null)
-                }
-              } : undefined}
-              onToggleCleaning={isUser ? (kind, next) => toggleVehicleCleaning(v, kind, next) : undefined}
-              confirming={confirmingId === v.id}
-              selectionMode={selectionMode}
-              selected={selectedIds.has(v.id)}
-              onLongPress={isAdmin && canConfirm ? () => enterSelectionMode(v.id) : undefined}
-              onToggleSelect={() => toggleSelect(v.id)}
-            />
-          )
-        })}
+        {/* Gespanne – Fahrzeug + Trailer als eine Karte */}
+        {gespanneToShow.length > 0 && (
+          <div className="pt-1">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1 mb-1.5">
+              {t('gespanne.title')}
+            </h3>
+            <div className="space-y-3">
+              {gespanneToShow.map(({ vehicle, trailer, coupling }) => (
+                <div key={coupling.id} className="rounded-2xl border-2 border-blue-100 bg-blue-50/40 p-2 space-y-2">
+                  <div className="flex items-center gap-1.5 px-1 pt-0.5 text-[11px] font-semibold text-blue-600 uppercase tracking-wide">
+                    <Link2 size={13} /> {t('gespanne.title')}
+                  </div>
+                  {renderVehicle(vehicle, true)}
+                  {renderTrailer(trailer, true)}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* Trailer dieser Flotte – mit Annahme & Cleaning (nur außen) */}
-        {!loading && filteredTrailers.length > 0 && (
-          <div className="pt-3">
+        {/* Fahrzeuge ohne Trailer */}
+        {singleVehicles.length > 0 && (
+          <div className="pt-2">
+            {gespanneToShow.length > 0 && (
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1 mb-1.5">
+                {t('nav.vehicles')}
+              </h3>
+            )}
+            <div className="space-y-2">
+              {singleVehicles.map(v => renderVehicle(v))}
+            </div>
+          </div>
+        )}
+
+        {/* Trailer ohne Fahrzeug */}
+        {singleTrailers.length > 0 && (
+          <div className="pt-2">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1 mb-1.5">
               {t('nav.trailers')}
             </h3>
             <div className="space-y-2">
-              {filteredTrailers.map((tr) => {
-                const c = vehicleByTrailer[tr.id]
-                const coupledLabel = c?.vehicle
-                  ? (c.vehicle.license_plate || c.vehicle.vin || t('couplings.coupled'))
-                  : undefined
-                const canConfirm = isAdmin && !tr.annahme_confirmed
-                return (
-                  <div key={tr.id} className="rounded-xl border border-gray-100 bg-white overflow-hidden">
-                    <button onClick={() => navigate(`/trailer/${tr.id}`)}
-                      className="w-full px-4 py-3 text-left flex items-center gap-3 active:opacity-70">
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <Container size={20} className="text-gray-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">{tr.license_plate || '—'}</p>
-                        <p className="text-xs text-gray-400 truncate">
-                          {t(`trailers.types.${tr.trailer_type}`)}{tr.brand_model ? ` · ${tr.brand_model}` : ''}
-                        </p>
-                        {coupledLabel && (
-                          <p className="text-[11px] text-blue-500 truncate flex items-center gap-1">
-                            <Link2 size={10} /> {coupledLabel}
-                          </p>
-                        )}
-                      </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${STATUS_COLORS[tr.status]}`}>
-                        {t(`fleets.status.${tr.status}`)}
-                      </span>
-                    </button>
-
-                    {canConfirm ? (
-                      <div className="px-4 pb-2 flex">
-                        <button onClick={() => confirmTrailer(tr)} disabled={confirmingId === tr.id}
-                          className="mx-auto px-5 py-2 rounded-lg bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 disabled:opacity-50 transition-colors flex items-center gap-1.5">
-                          {confirmingId === tr.id ? t('common.loading') : <><Lock size={12} /> {t('protocol.annahme_confirm')}</>}
-                        </button>
-                      </div>
-                    ) : tr.annahme_confirmed && isUser ? (
-                      <div className="px-4 pb-2.5">
-                        <CleaningToggles
-                          inside={false}
-                          outside={!!tr.cleaning_outside}
-                          showInside={false}
-                          onToggle={(_, next) => toggleTrailerCleaning(tr, next)}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                )
-              })}
+              {singleTrailers.map(tr => renderTrailer(tr))}
             </div>
           </div>
         )}
