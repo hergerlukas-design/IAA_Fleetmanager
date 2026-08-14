@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowLeft, Camera, Trash2, Plus, Lock, CheckCircle2,
-  AlertCircle, Pencil, ChevronRight, Wrench,
+  AlertCircle, Pencil, ChevronRight, Wrench, Link2, Unlink, Container,
 } from 'lucide-react'
 import ImageLightbox from '@/components/ImageLightbox'
 import { supabase, getPhotoUrl, ERR_FILE_TOO_LARGE } from '@/lib/supabase'
@@ -24,13 +24,17 @@ import {
 } from '@/lib/damages'
 import { createKmEntry } from '@/lib/kmHistory'
 import { fetchActiveFleets } from '@/lib/fleets'
+import { fetchTrailers } from '@/lib/trailers'
+import {
+  fetchActiveCouplingForVehicle, fetchActiveCouplings, createCoupling, endCoupling,
+} from '@/lib/couplings'
 import { useAuth } from '@/contexts/useAuth'
 import TruckDamageSelector from '@/components/TruckDamageSelector'
 import KmLogSheet from '@/pages/KmLogSheet'
 import KmHistoryCard from '@/pages/KmHistoryCard'
 import type {
   Vehicle, VehiclePhoto, DamageRecord,
-  IntakeProtocol, Fleet,
+  IntakeProtocol, Fleet, Trailer, Coupling,
 } from '@/lib/types'
 
 // ─── Status config ───────────────────────────────────────────────────────────
@@ -1169,6 +1173,125 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+// ─── Gespann / Kopplung Card ──────────────────────────────────────────────────
+
+function GespannCard({ vehicle }: { vehicle: Vehicle }) {
+  const { t }        = useTranslation()
+  const { isUser, userName } = useAuth()
+  const navigate     = useNavigate()
+
+  const [coupling, setCoupling]         = useState<Coupling | null>(null)
+  const [freeTrailers, setFreeTrailers] = useState<Trailer[]>([])
+  const [loading, setLoading]           = useState(true)
+  const [busy, setBusy]                 = useState(false)
+  const [picking, setPicking]           = useState(false)
+  const [sel, setSel]                   = useState('')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [active, trailers, allActive] = await Promise.all([
+        fetchActiveCouplingForVehicle(vehicle.id),
+        fetchTrailers(),
+        fetchActiveCouplings(),
+      ])
+      setCoupling(active)
+      const used = new Set(allActive.map(c => c.trailer_id))
+      setFreeTrailers(trailers.filter(tr => !used.has(tr.id)))
+    } finally {
+      setLoading(false)
+    }
+  }, [vehicle.id])
+
+  useEffect(() => { void load() }, [load])
+
+  async function handleCouple() {
+    if (!sel) return
+    setBusy(true)
+    try {
+      await createCoupling(vehicle.id, sel, userName || null)
+      setSel(''); setPicking(false)
+      await load()
+    } finally { setBusy(false) }
+  }
+
+  async function handleDecouple() {
+    if (!coupling) return
+    if (!confirm(t('couplings.decouple_confirm'))) return
+    setBusy(true)
+    try {
+      await endCoupling(coupling.id)
+      await load()
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+      <SectionHeader title={t('couplings.title')} icon={<Link2 size={16} />} />
+
+      {loading ? (
+        <div className="h-10 bg-gray-100 rounded-xl animate-pulse" />
+      ) : coupling ? (
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(`/trailer/${coupling.trailer_id}`)}
+            className="flex-1 flex items-center gap-2 min-w-0 text-left active:opacity-70">
+            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <Container size={18} className="text-gray-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-gray-900 truncate">{coupling.trailer?.license_plate || '—'}</p>
+              <p className="text-xs text-gray-400 truncate">
+                {coupling.trailer ? t(`trailers.types.${coupling.trailer.trailer_type}`) : ''}
+              </p>
+            </div>
+          </button>
+          {isUser && (
+            <button onClick={handleDecouple} disabled={busy}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-medium hover:bg-red-50 disabled:opacity-50">
+              <Unlink size={13} /> {t('couplings.decouple')}
+            </button>
+          )}
+        </div>
+      ) : isUser ? (
+        picking ? (
+          <div className="space-y-2">
+            <select value={sel} onChange={e => setSel(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm bg-white focus:outline-none focus:border-blue-400">
+              <option value="">{t('couplings.select_trailer')}</option>
+              {freeTrailers.map(tr => (
+                <option key={tr.id} value={tr.id}>{(tr.license_plate || '—') + ` · ${t(`trailers.types.${tr.trailer_type}`)}`}</option>
+              ))}
+            </select>
+            {freeTrailers.length === 0 && (
+              <p className="text-xs text-gray-400 text-center">{t('trailers.no_trailers')}</p>
+            )}
+            <div className="flex gap-2">
+              <button onClick={() => { setPicking(false); setSel('') }}
+                className="flex-1 py-2 rounded-xl border border-gray-300 text-gray-600 text-sm">
+                {t('common.cancel')}
+              </button>
+              <button onClick={handleCouple} disabled={busy || !sel}
+                className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-1">
+                <Link2 size={14} /> {t('couplings.couple')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm text-gray-400 mb-2">{t('couplings.not_coupled')}</p>
+            <button onClick={() => setPicking(true)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-blue-200 text-blue-500 hover:bg-blue-50 transition-colors text-sm font-medium">
+              <Link2 size={16} /> {t('couplings.couple')}
+            </button>
+          </>
+        )
+      ) : (
+        <p className="text-sm text-gray-400">{t('couplings.not_coupled')}</p>
+      )}
+    </div>
+  )
+}
+
 export default function VehicleCard() {
   const { id }       = useParams<{ id: string }>()
   const { t }        = useTranslation()
@@ -1286,6 +1409,8 @@ export default function VehicleCard() {
       {/* Scrollable content */}
       <main className="flex-1 px-4 py-4 space-y-4 pb-24">
         <HeroCard vehicle={vehicle} photos={photos} />
+
+        <GespannCard vehicle={vehicle} />
 
         {isAdmin ? (
           // Admin: Confirm button → Basisdaten → Fotos → Schäden → (Status after confirmed) → Protokoll
