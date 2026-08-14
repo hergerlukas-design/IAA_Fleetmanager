@@ -5,6 +5,7 @@
     "vehicles": "Vehicles",
     "trailers": "Trailers",
     "gespanne": "Combos",
+    "packing": "Packing",
     "settings": "Settings"
   },
   "login": {
@@ -231,6 +232,25 @@
     "placeholder": "New task…",
     "open_count": "{{count}} open task(s)",
     "save_failed": "Saving failed. Please try again."
+  },
+  "packing": {
+    "title": "Material & Packing List",
+    "add_title": "Add item",
+    "name_placeholder": "What? e.g. tool case",
+    "qty_placeholder": "Qty",
+    "category_placeholder": "Category (optional)",
+    "add_btn": "Add",
+    "filter_all": "All",
+    "no_category": "No category",
+    "empty": "No items yet. Add something above.",
+    "load_failed": "Could not load the list.",
+    "save_failed": "Saving failed. Please try again.",
+    "status": {
+      "offen": "Open",
+      "kaufen": "To buy",
+      "gekauft": "Bought",
+      "gepackt": "Packed"
+    }
   },
   "status_section": {
     "title": "Vehicle Status",

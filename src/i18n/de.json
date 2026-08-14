@@ -5,6 +5,7 @@
     "vehicles": "Fahrzeuge",
     "trailers": "Trailer",
     "gespanne": "Gespanne",
+    "packing": "Packliste",
     "settings": "Einstellungen"
   },
   "login": {
@@ -231,6 +232,25 @@
     "placeholder": "Neue Aufgabe…",
     "open_count": "{{count}} offene Aufgabe(n)",
     "save_failed": "Speichern fehlgeschlagen. Bitte erneut versuchen."
+  },
+  "packing": {
+    "title": "Material & Packliste",
+    "add_title": "Eintrag hinzufügen",
+    "name_placeholder": "Was? z. B. Werkzeugkoffer",
+    "qty_placeholder": "Menge",
+    "category_placeholder": "Kategorie (optional)",
+    "add_btn": "Hinzufügen",
+    "filter_all": "Alle",
+    "no_category": "Ohne Kategorie",
+    "empty": "Noch keine Einträge. Füge oben etwas hinzu.",
+    "load_failed": "Liste konnte nicht geladen werden.",
+    "save_failed": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+    "status": {
+      "offen": "Offen",
+      "kaufen": "Kaufen",
+      "gekauft": "Gekauft",
+      "gepackt": "Gepackt"
+    }
   },
   "status_section": {
     "title": "Fahrzeugstatus",

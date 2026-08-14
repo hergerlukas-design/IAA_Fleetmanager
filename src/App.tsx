@@ -8,6 +8,7 @@ import VehicleCard from '@/pages/VehicleCard'
 import Trailers from '@/pages/Trailers'
 import TrailerCard from '@/pages/TrailerCard'
 import Gespanne from '@/pages/Gespanne'
+import Packliste from '@/pages/Packliste'
 import Settings from '@/pages/Settings'
 import DuplicateScan from '@/pages/DuplicateScan'
 import Impressum from '@/pages/Impressum'
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/trailers"     element={<ProtectedRoute><Trailers /></ProtectedRoute>} />
         <Route path="/trailer/:id"  element={<ProtectedRoute><TrailerCard /></ProtectedRoute>} />
         <Route path="/gespanne"     element={<ProtectedRoute><Gespanne /></ProtectedRoute>} />
+        <Route path="/packliste"    element={<ProtectedRoute><Packliste /></ProtectedRoute>} />
         <Route path="/settings"     element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/admin/duplicates" element={<ProtectedRoute><DuplicateScan /></ProtectedRoute>} />
         <Route path="/impressum"    element={<Impressum />} />
