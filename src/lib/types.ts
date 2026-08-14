@@ -123,6 +123,10 @@ export interface TrailerDamage {
   id: string
   trailer_id: string
   position: TrailerDamagePosition | null
+  /** Schadensart (delle/kratzer/…) – optional, für strukturierte Erfassung. */
+  damage_type?: string | null
+  /** Stärke – optional, für strukturierte Erfassung. */
+  intensity?: 'leicht' | 'mittel' | 'schwer' | null
   description: string | null
   storage_path: string | null
   created_by: string | null

@@ -8,6 +8,12 @@ import {
   createDamage, uploadDamagePhoto, updateDamage, serializeDamagePaths,
   DAMAGE_TYPES, DAMAGE_INTENSITIES,
 } from '@/lib/damages'
+import {
+  createTrailer, updateTrailer, uploadTrailerPhoto,
+  createTrailerDamage, updateTrailerDamage, uploadTrailerDamagePhoto,
+  serializeTrailerDamagePaths,
+} from '@/lib/trailers'
+import { createCoupling } from '@/lib/couplings'
 import { createProtocol } from '@/lib/protocols'
 import { supabase, ERR_FILE_TOO_LARGE } from '@/lib/supabase'
 import TruckDamageSelector from '@/components/TruckDamageSelector'
@@ -26,14 +32,19 @@ const STEPS = [
   { key: 'basisdaten', icon: '1' },
   { key: 'fotos',      icon: '2' },
   { key: 'schaeden',   icon: '3' },
-  { key: 'protokoll',  icon: '4' },
+  { key: 'trailer',    icon: '4' },
+  { key: 'protokoll',  icon: '5' },
 ] as const
+
+type StepNum = 1 | 2 | 3 | 4 | 5
+
+interface TrailerDamageDraft { type: string; intensity: string; desc: string; files: File[] }
 
 export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: Props) {
   const { t }        = useTranslation()
   const { userName } = useAuth()
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  const [step, setStep] = useState<StepNum>(1)
   const [vehicleId, setVehicleId] = useState<string | null>(null)
 
   // ── Step 1: Basisdaten ─────────────────────────────────────────────────────
@@ -74,6 +85,18 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
   const [dmgDesc, setDmgDesc]                 = useState('')
   const [dmgFiles, setDmgFiles]               = useState<File[]>([])
   const [finishing, setFinishing]             = useState(false)
+
+  // ── Step 4: Trailer (optional) ─────────────────────────────────────────────
+  const [trailerId, setTrailerId]     = useState<string | null>(null)
+  const [trailerPlate, setTrailerPlate] = useState('')
+  const [trailerModel, setTrailerModel] = useState('')
+  const [trailerPhotos, setTrailerPhotos] = useState<File[]>([])
+  const [trailerDamages, setTrailerDamages] = useState<TrailerDamageDraft[]>([])
+  const [showTrailerDmgForm, setShowTrailerDmgForm] = useState(false)
+  const [tDmgType, setTDmgType]           = useState<typeof DAMAGE_TYPES[number]>(DAMAGE_TYPES[0])
+  const [tDmgIntensity, setTDmgIntensity] = useState<typeof DAMAGE_INTENSITIES[number]>(DAMAGE_INTENSITIES[0])
+  const [tDmgDesc, setTDmgDesc]           = useState('')
+  const [tDmgFiles, setTDmgFiles]         = useState<File[]>([])
 
   // ── Step 4: Protokoll ─────────────────────────────────────────────────────
   const [protoForm, setProtoForm] = useState({
@@ -212,7 +235,84 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
     }
   }
 
-  // ── Step 4: save protocol and finish ──────────────────────────────────────
+  // ── Step 4: create trailer (optional) + couple, then advance ──────────────
+  const hasTrailerInput =
+    !!(trailerPlate.trim() || trailerModel.trim() || trailerPhotos.length || trailerDamages.length)
+
+  async function handleStep4() {
+    if (!vehicleId) return
+    // Kein Trailer erfasst → Step überspringen.
+    if (!hasTrailerInput) { setStep(5); return }
+    setSaving(true)
+    setError(null)
+    try {
+      if (trailerId) {
+        // Bereits angelegt (Zurück-Navigation) → nur Basisdaten aktualisieren.
+        await updateTrailer(trailerId, {
+          license_plate: trailerPlate.trim() || null,
+          brand_model:   trailerModel.trim() || null,
+        })
+      } else {
+        const tr = await createTrailer({
+          fleet_id:      fleetId || null,
+          license_plate: trailerPlate.trim() || null,
+          trailer_type:  'anhaenger',
+          brand_model:   trailerModel.trim() || null,
+          notes:         null,
+          status:        'in_bearbeitung',
+          created_by:    userName || null,
+        })
+        setTrailerId(tr.id)
+
+        for (let i = 0; i < trailerPhotos.length; i++) {
+          await uploadTrailerPhoto(tr.id, trailerPhotos[i], i, userName || '')
+        }
+
+        for (const d of trailerDamages) {
+          const record = await createTrailerDamage(tr.id, {
+            position:     null,
+            damage_type:  d.type,
+            intensity:    d.intensity as 'leicht' | 'mittel' | 'schwer',
+            description:  d.desc || null,
+            storage_path: null,
+            created_by:   userName || null,
+          })
+          if (d.files.length > 0) {
+            const paths = await Promise.all(
+              d.files.map((f, i) => uploadTrailerDamagePhoto(record.id, tr.id, f, i))
+            )
+            await updateTrailerDamage(record.id, { storage_path: serializeTrailerDamagePaths(paths) })
+          }
+        }
+
+        // Trailer direkt mit dem Zugfahrzeug koppeln (Gespann).
+        await createCoupling(vehicleId, tr.id, userName || null)
+      }
+      setStep(5)
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err)
+      setError(raw === ERR_FILE_TOO_LARGE ? t('errors.file_too_large') : t('errors.save_failed'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function addTrailerDamage() {
+    setTrailerDamages(prev => [...prev, {
+      type: tDmgType, intensity: tDmgIntensity, desc: tDmgDesc, files: [...tDmgFiles],
+    }])
+    setTDmgType(DAMAGE_TYPES[0])
+    setTDmgIntensity(DAMAGE_INTENSITIES[0])
+    setTDmgDesc('')
+    setTDmgFiles([])
+    setShowTrailerDmgForm(false)
+  }
+
+  function removeTrailerDamage(idx: number) {
+    setTrailerDamages(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  // ── Step 5: save protocol and finish ──────────────────────────────────────
   function getCanvasPos(e: React.MouseEvent | React.TouchEvent) {
     const canvas = canvasRef.current!
     const rect   = canvas.getBoundingClientRect()
@@ -305,7 +405,7 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
         {/* Stepper */}
         <div className="flex items-center justify-center gap-2">
           {STEPS.map((s, i) => {
-            const stepNum = (i + 1) as 1 | 2 | 3 | 4
+            const stepNum = (i + 1) as StepNum
             const done = step > stepNum
             const active = step === stepNum
             const canGoBack = done && !saving && !finishing
@@ -635,8 +735,175 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
           </div>
         )}
 
-        {/* ── STEP 4: Protokoll ───────────────────────────────────────────── */}
+        {/* ── STEP 4: Trailer (optional) ──────────────────────────────────── */}
         {step === 4 && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">{t('create_wizard.trailer_hint')}</p>
+
+            {/* Basisdaten: nur Kennzeichen + Modell */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{t('create_wizard.trailer_basisdaten')}</p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('trailers.license_plate')}</label>
+                <input type="text" value={trailerPlate} onChange={e => setTrailerPlate(e.target.value.toUpperCase())}
+                  placeholder="AB CD 1234"
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400 font-mono uppercase" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('vehicles.brand_model')}</label>
+                <input type="text" value={trailerModel} onChange={e => setTrailerModel(e.target.value)}
+                  placeholder="Krone / Schmitz …"
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400" />
+              </div>
+            </div>
+
+            {/* Fotos */}
+            <div>
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">{t('create_wizard.trailer_photos')}</p>
+              {trailerPhotos.length > 0 && (
+                <div className="grid grid-cols-3 gap-1.5 mb-2">
+                  {trailerPhotos.map((f, i) => (
+                    <DmgFilePreview key={i} file={f} onRemove={() => setTrailerPhotos(fs => fs.filter((_, j) => j !== i))} />
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
+                  <input type="file" accept="image/*" capture="environment" className="sr-only"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) setTrailerPhotos(fs => [...fs, f]); e.target.value = '' }} />
+                  <Camera size={14} /> {t('damages.photo_camera')}
+                </label>
+                <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
+                  <input type="file" accept="image/*" multiple className="sr-only"
+                    onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) setTrailerPhotos(fs => [...fs, ...files]); e.target.value = '' }} />
+                  <Plus size={14} /> {t('damages.photo_gallery')}
+                </label>
+              </div>
+            </div>
+
+            {/* Schäden – ohne visuelle Karte: Art, Stärke, Beschreibung, Foto */}
+            <div>
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">{t('create_wizard.trailer_damages')}</p>
+              {trailerDamages.length > 0 && (
+                <div className="space-y-2 mb-2">
+                  {trailerDamages.map((d, i) => (
+                    <div key={i} className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-sm text-gray-900">{t(`damages.types.${d.type}`, { defaultValue: d.type })}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            d.intensity === 'leicht' ? 'bg-green-100 text-green-700' :
+                            d.intensity === 'mittel' ? 'bg-amber-100 text-amber-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>{t(`damages.intensities.${d.intensity}`)}</span>
+                        </div>
+                        {d.desc && <p className="text-xs text-gray-400 mt-0.5 truncate">{d.desc}</p>}
+                        {d.files.length > 0 && <p className="text-xs text-gray-400 mt-0.5">{d.files.length} {t('create_wizard.photos_count')}</p>}
+                      </div>
+                      <button onClick={() => removeTrailerDamage(i)} className="text-gray-300 hover:text-red-500 p-0.5">
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {showTrailerDmgForm ? (
+                <div className="border border-gray-200 rounded-xl p-3 space-y-3 bg-gray-50">
+                  <div>
+                    <p className="text-xs font-medium text-gray-600 mb-1.5">{t('damages.type')}</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {DAMAGE_TYPES.map(dt => (
+                        <button key={dt} type="button" onClick={() => setTDmgType(dt)}
+                          className={`py-1.5 px-2 rounded-lg text-xs border transition-colors ${
+                            tDmgType === dt ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700'
+                          }`}>
+                          {t(`damages.types.${dt}`)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-medium text-gray-600 mb-1.5">{t('damages.intensity')}</p>
+                    <div className="flex gap-2">
+                      {DAMAGE_INTENSITIES.map(i => (
+                        <button key={i} type="button" onClick={() => setTDmgIntensity(i)}
+                          className={`flex-1 py-1.5 rounded-lg text-xs border transition-colors ${
+                            tDmgIntensity === i ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700'
+                          }`}>
+                          {t(`damages.intensities.${i}`)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">{t('damages.description')}</label>
+                    <textarea value={tDmgDesc} onChange={e => setTDmgDesc(e.target.value)} rows={2}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400 resize-none" />
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-medium text-gray-600 mb-1">{t('damages.photo')}</p>
+                    {tDmgFiles.length > 0 && (
+                      <div className="grid grid-cols-3 gap-1.5 mb-2">
+                        {tDmgFiles.map((f, i) => (
+                          <DmgFilePreview key={i} file={f} onRemove={() => setTDmgFiles(fs => fs.filter((_, j) => j !== i))} />
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
+                        <input type="file" accept="image/*" capture="environment" className="sr-only"
+                          onChange={e => { const f = e.target.files?.[0]; if (f) setTDmgFiles(fs => [...fs, f]); e.target.value = '' }} />
+                        <Camera size={14} /> {t('damages.photo_camera')}
+                      </label>
+                      <label className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 text-gray-500 text-xs cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-colors">
+                        <input type="file" accept="image/*" multiple className="sr-only"
+                          onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) setTDmgFiles(fs => [...fs, ...files]); e.target.value = '' }} />
+                        <Plus size={14} /> {t('damages.photo_gallery')}
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button onClick={() => setShowTrailerDmgForm(false)}
+                      className="flex-1 py-2 rounded-xl border border-gray-300 text-gray-600 text-sm">
+                      {t('common.cancel')}
+                    </button>
+                    <button onClick={addTrailerDamage}
+                      className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+                      {t('create_wizard.add_trailer_damage')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setShowTrailerDmgForm(true)}
+                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 text-sm font-medium flex items-center justify-center gap-1.5 hover:border-red-300 hover:text-red-500 transition-colors">
+                  <Plus size={16} /> {t('damages.add')}
+                </button>
+              )}
+            </div>
+
+            {/* Nav */}
+            {!showTrailerDmgForm && (
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => setStep(3)}
+                  className="py-3 px-4 rounded-xl border border-gray-300 text-gray-600 font-medium flex items-center gap-1">
+                  <ChevronLeft size={18} /> {t('create_wizard.back')}
+                </button>
+                <button onClick={handleStep4} disabled={saving}
+                  className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                  {saving ? t('common.loading') : <>{hasTrailerInput ? t('create_wizard.next') : t('create_wizard.no_trailer')} <ChevronRight size={18} /></>}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── STEP 5: Protokoll ───────────────────────────────────────────── */}
+        {step === 5 && (
           <div className="space-y-4">
             <p className="text-sm text-gray-500">{t('create_wizard.protocol_hint')}</p>
 
@@ -684,7 +951,7 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
             </div>
 
             <div className="flex gap-2">
-              <button onClick={() => setStep(3)}
+              <button onClick={() => setStep(4)}
                 className="py-3 px-4 rounded-xl border border-gray-300 text-gray-600 font-medium flex items-center gap-1">
                 <ChevronLeft size={18} /> {t('create_wizard.back')}
               </button>

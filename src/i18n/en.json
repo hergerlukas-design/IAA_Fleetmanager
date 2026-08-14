@@ -2,7 +2,7 @@
   "app_name": "IAA Nutzfahrzeuge",
   "nav": {
     "fleets": "Fleets",
-    "vehicles": "Trucks",
+    "vehicles": "Vehicles",
     "trailers": "Trailers",
     "gespanne": "Combos",
     "settings": "Settings"
@@ -288,6 +288,7 @@
     "step_basisdaten": "Details",
     "step_fotos": "Photos",
     "step_schaeden": "Damage",
+    "step_trailer": "Trailer",
     "next": "Next",
     "back": "Back",
     "done": "Done",
@@ -296,7 +297,13 @@
     "photos_hint": "Take the base photos for the vehicle file.",
     "photos_count": "photo(s)",
     "step_protokoll": "Protocol",
-    "protocol_hint": "Fill in the intake protocol and sign."
+    "protocol_hint": "Fill in the intake protocol and sign.",
+    "trailer_hint": "Optional: capture a trailer right away and couple it to the vehicle.",
+    "no_trailer": "No trailer",
+    "trailer_basisdaten": "Trailer details",
+    "trailer_photos": "Trailer photos",
+    "trailer_damages": "Trailer damage",
+    "add_trailer_damage": "Add trailer damage"
   },
   "update": {
     "available": "New version available",

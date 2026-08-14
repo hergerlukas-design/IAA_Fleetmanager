@@ -2,7 +2,7 @@
   "app_name": "IAA Nutzfahrzeuge",
   "nav": {
     "fleets": "Flotten",
-    "vehicles": "Zugfahrzeuge",
+    "vehicles": "Fahrzeuge",
     "trailers": "Trailer",
     "gespanne": "Gespanne",
     "settings": "Einstellungen"
@@ -288,6 +288,7 @@
     "step_basisdaten": "Basisdaten",
     "step_fotos": "Fotos",
     "step_schaeden": "Schäden",
+    "step_trailer": "Trailer",
     "next": "Weiter",
     "back": "Zurück",
     "done": "Fertig",
@@ -296,7 +297,13 @@
     "photos_hint": "Basisfotos der Fahrzeugkartei aufnehmen.",
     "photos_count": "Foto(s)",
     "step_protokoll": "Protokoll",
-    "protocol_hint": "Annahmeprotokoll ausfüllen und unterschreiben."
+    "protocol_hint": "Annahmeprotokoll ausfüllen und unterschreiben.",
+    "trailer_hint": "Optional: Trailer direkt miterfassen und mit dem Fahrzeug koppeln.",
+    "no_trailer": "Ohne Trailer",
+    "trailer_basisdaten": "Trailer-Basisdaten",
+    "trailer_photos": "Trailer-Fotos",
+    "trailer_damages": "Trailer-Schäden",
+    "add_trailer_damage": "Trailer-Schaden hinzufügen"
   },
   "update": {
     "available": "Neue Version verfügbar",

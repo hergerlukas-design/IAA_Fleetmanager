@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, Car, ArrowUpDown, Lock, X, CheckSquare } from 'lucide-react'
+import { Plus, Search, Car, ArrowUpDown, Lock, X, CheckSquare, Truck, Container, Link2 } from 'lucide-react'
 import Layout from '@/components/Layout'
 import { useAuth } from '@/contexts/useAuth'
 import { fetchVehicles } from '@/lib/vehicles'
 import { confirmAnnahmeByVehicleId } from '@/lib/protocols'
 import type { Vehicle } from '@/lib/types'
 import CreateVehicleSheet from './CreateVehicleSheet'
+import TrailersPanel from './TrailersPanel'
+import GespannePanel from './GespannePanel'
+
+type FilterView = 'vehicles' | 'trailers' | 'gespanne'
 
 const STATUS_COLORS: Record<string, string> = {
   in_bearbeitung: 'bg-amber-100 text-amber-700',
@@ -131,6 +135,7 @@ export default function Vehicles() {
   const [sortBy, setSortBy]     = useState<'plate' | 'newest'>('plate')
   const [loading, setLoading]   = useState(true)
   const [showCreate, setShowCreate] = useState(false)
+  const [view, setView]         = useState<FilterView>('vehicles')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -209,6 +214,28 @@ export default function Vehicles() {
         </div>
       }
     >
+      {/* Filter: Fahrzeuge / Trailer / Gespanne */}
+      <div className="px-4 pt-4">
+        <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
+          {([
+            { id: 'vehicles', icon: Truck,     label: t('nav.vehicles') },
+            { id: 'trailers', icon: Container, label: t('nav.trailers') },
+            { id: 'gespanne', icon: Link2,     label: t('nav.gespanne') },
+          ] as { id: FilterView; icon: typeof Truck; label: string }[]).map(({ id, icon: Icon, label }) => (
+            <button key={id} type="button" onClick={() => setView(id)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                view === id ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}>
+              <Icon size={16} /> {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {view === 'trailers' && <TrailersPanel />}
+      {view === 'gespanne' && <GespannePanel />}
+
+      {view === 'vehicles' && (<>
       {/* Search */}
       <div className="px-4 pt-4 pb-2 space-y-2">
         <div className="relative">
@@ -299,6 +326,8 @@ export default function Vehicles() {
           </button>
         )}
       </div>
+
+      </>)}
 
       {showCreate && (
         <CreateVehicleSheet onDone={handleDone} onClose={() => setShowCreate(false)} />
