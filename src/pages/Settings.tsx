@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Globe, Download, Layers, Plus, Pencil, Trash2, X, Check, MessageSquare, ChevronDown, RefreshCw, Copy } from 'lucide-react'
+import { Globe, Download, Layers, Plus, Pencil, Trash2, X, Check, MessageSquare, ChevronDown, ChevronUp, RefreshCw, Copy } from 'lucide-react'
 import Layout from '@/components/Layout'
 import Modal from '@/components/Modal'
 import { useAuth } from '@/contexts/useAuth'
-import { fetchFleets, createFleet, updateFleet, deleteFleet, FLEET_COLORS } from '@/lib/fleets'
+import { fetchFleets, createFleet, updateFleet, deleteFleet, reorderFleets, FLEET_COLORS } from '@/lib/fleets'
 import { fetchVehicles } from '@/lib/vehicles'
 import { fetchDamages } from '@/lib/damages'
 import { fetchProtocol } from '@/lib/protocols'
@@ -174,6 +174,19 @@ export default function Settings() {
     loadFleets()
   }
 
+  async function handleMoveFleet(index: number, dir: -1 | 1) {
+    const target = index + dir
+    if (target < 0 || target >= fleets.length) return
+    const next = [...fleets]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    setFleets(next) // optimistic reorder
+    try {
+      await reorderFleets(next.map((f) => f.id))
+    } catch {
+      loadFleets() // revert to server order on failure
+    }
+  }
+
   return (
     <Layout
       header={
@@ -205,9 +218,21 @@ export default function Settings() {
         {isAdmin && (
           <Section title={t('settings.fleet_management')} icon={<Layers size={18} />}>
             <div className="space-y-2">
-              {fleets.map((fleet) => (
+              {fleets.map((fleet, index) => (
                 <div key={fleet.id}
-                  className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-3">
+                  className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-3">
+                  <div className="flex flex-col -my-1 flex-shrink-0">
+                    <button onClick={() => handleMoveFleet(index, -1)} disabled={index === 0}
+                      aria-label={t('fleets.move_up')} title={t('fleets.move_up')}
+                      className="p-0.5 text-gray-400 hover:text-blue-600 disabled:opacity-30 disabled:hover:text-gray-400">
+                      <ChevronUp size={16} />
+                    </button>
+                    <button onClick={() => handleMoveFleet(index, 1)} disabled={index === fleets.length - 1}
+                      aria-label={t('fleets.move_down')} title={t('fleets.move_down')}
+                      className="p-0.5 text-gray-400 hover:text-blue-600 disabled:opacity-30 disabled:hover:text-gray-400">
+                      <ChevronDown size={16} />
+                    </button>
+                  </div>
                   <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: fleet.color ?? '#3b82f6' }} />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900 text-sm truncate">{fleet.name}</p>

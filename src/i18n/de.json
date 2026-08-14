@@ -37,7 +37,9 @@
       "ausstehend": "Ausstehend",
       "in_bearbeitung": "In Bearbeitung",
       "abgeschlossen": "Abgeschlossen"
-    }
+    },
+    "move_up": "Nach oben",
+    "move_down": "Nach unten"
   },
   "vehicles": {
     "title": "Fahrzeuge",

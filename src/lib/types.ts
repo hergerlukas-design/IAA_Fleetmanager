@@ -4,6 +4,8 @@ export interface Fleet {
   color: string | null
   description: string | null
   active: boolean
+  /** Manual sort order (ascending). Nulls sort last. */
+  position: number | null
   created_at: string
 }
 
