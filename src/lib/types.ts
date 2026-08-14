@@ -90,6 +90,23 @@ export interface FleetTodo {
   created_at: string
 }
 
+// ─── Material- & Packliste ────────────────────────────────────────────────────
+
+/** Arbeitsablauf-Status eines Packlisten-Eintrags. */
+export type PackingStatus = 'offen' | 'kaufen' | 'gekauft' | 'gepackt'
+
+export interface PackingItem {
+  id: string
+  name: string
+  quantity: string | null
+  category: string | null
+  status: PackingStatus
+  note: string | null
+  position: number
+  created_at: string
+  created_by: string | null
+}
+
 // ─── Trailer (Anhänger / Sattelauflieger) ────────────────────────────────────
 
 export type TrailerType = 'anhaenger' | 'sattelauflieger' | 'sonstiges'
