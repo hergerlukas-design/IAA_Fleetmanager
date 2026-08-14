@@ -47,6 +47,20 @@ export async function updateTrailer(id: string, payload: Partial<Omit<Trailer, '
   return data as Trailer
 }
 
+/** Annahme eines Trailers bestätigen (setzt Status auf abgeschlossen). */
+export async function confirmTrailerAnnahme(id: string, confirmedBy: string): Promise<void> {
+  const { error } = await supabase
+    .from('trailers')
+    .update({
+      annahme_confirmed:    true,
+      annahme_confirmed_by: confirmedBy || null,
+      annahme_confirmed_at: new Date().toISOString(),
+      status:               'abgeschlossen',
+    })
+    .eq('id', id)
+  if (error) throw error
+}
+
 export async function deleteTrailer(id: string): Promise<void> {
   const { error } = await supabase.from('trailers').delete().eq('id', id)
   if (error) throw error

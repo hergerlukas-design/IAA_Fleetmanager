@@ -107,6 +107,11 @@
     "empty": "No active combos yet.",
     "new": "Couple new combo"
   },
+  "cleaning": {
+    "label": "Cleaning",
+    "inside": "Inside",
+    "outside": "Outside"
+  },
   "vehicle_card": {
     "back": "Back",
     "tabs": {

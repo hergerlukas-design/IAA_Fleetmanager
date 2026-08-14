@@ -107,6 +107,11 @@
     "empty": "Noch keine aktiven Gespanne.",
     "new": "Neues Gespann koppeln"
   },
+  "cleaning": {
+    "label": "Reinigung",
+    "inside": "Innen",
+    "outside": "Außen"
+  },
   "vehicle_card": {
     "back": "Zurück",
     "tabs": {

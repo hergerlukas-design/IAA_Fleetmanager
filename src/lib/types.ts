@@ -19,6 +19,8 @@ export interface Vehicle {
   notes: string | null
   status: 'in_bearbeitung' | 'abgeschlossen'
   werkstatt: boolean | null
+  cleaning_inside?: boolean
+  cleaning_outside?: boolean
   created_at: string
   created_by: string | null
   fleet?: Fleet
@@ -106,6 +108,10 @@ export interface Trailer {
   brand_model: string | null
   notes: string | null
   status: 'in_bearbeitung' | 'abgeschlossen'
+  cleaning_outside?: boolean
+  annahme_confirmed?: boolean
+  annahme_confirmed_by?: string | null
+  annahme_confirmed_at?: string | null
   created_at: string
   created_by: string | null
   fleet?: Fleet
