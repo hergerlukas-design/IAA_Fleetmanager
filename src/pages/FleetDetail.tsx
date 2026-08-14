@@ -268,7 +268,7 @@ export default function FleetDetail() {
       const [f, veh, trs, cps] = await Promise.all([
         fetchFleet(id),
         fetchVehicles(id),
-        fetchTrailers(id),
+        fetchTrailers(),
         fetchActiveCouplings(),
       ])
       setFleet(f)
@@ -310,21 +310,23 @@ export default function FleetDetail() {
   const tSort = (a: Trailer, b: Trailer) =>
     (a.license_plate || '').localeCompare(b.license_plate || '', 'de', { numeric: true, sensitivity: 'base' })
 
-  // Gespanne = Flotten-Fahrzeug + gekoppelter Flotten-Trailer als eine Einheit
-  const trailerIdSet = new Set(trailers.map(tr => tr.id))
+  // Gespann = Flotten-Fahrzeug + sein aktiv gekoppelter Trailer –
+  // unabhängig davon, welcher Flotte der Trailer zugeordnet ist.
+  const fleetTrailers = trailers.filter(tr => tr.fleet_id === id)
+  const trailerById: Record<string, Trailer> = {}
+  for (const tr of trailers) trailerById[tr.id] = tr
+
   const gespannVIds = new Set<string>()
   const gespannTIds = new Set<string>()
   const gespanne: { vehicle: Vehicle; trailer: Trailer; coupling: Coupling }[] = []
   for (const v of vehicles) {
     const c = trailerByVehicle[v.id]
-    if (c && trailerIdSet.has(c.trailer_id)) {
-      const tr = trailers.find(x => x.id === c.trailer_id)
-      if (tr) {
-        gespanne.push({ vehicle: v, trailer: tr, coupling: c })
-        gespannVIds.add(v.id)
-        gespannTIds.add(tr.id)
-      }
-    }
+    if (!c) continue
+    const tr = trailerById[c.trailer_id]
+    if (!tr) continue
+    gespanne.push({ vehicle: v, trailer: tr, coupling: c })
+    gespannVIds.add(v.id)
+    gespannTIds.add(tr.id)
   }
 
   const gespanneToShow = gespanne
@@ -333,11 +335,11 @@ export default function FleetDetail() {
   const singleVehicles = vehicles
     .filter(v => !gespannVIds.has(v.id) && matchesV(v) && (!onlyInBearbeitung || v.status === 'in_bearbeitung'))
     .sort(vSort)
-  const singleTrailers = trailers
+  const singleTrailers = fleetTrailers
     .filter(tr => !gespannTIds.has(tr.id) && matchesT(tr))
     .sort(tSort)
 
-  const totalItems = vehicles.length + trailers.length
+  const totalItems = vehicles.length + fleetTrailers.length
   const totalShown = gespanneToShow.length + singleVehicles.length + singleTrailers.length
 
   async function toggleVehicleCleaning(v: Vehicle, kind: 'inside' | 'outside', next: boolean) {
