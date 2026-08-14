@@ -11,6 +11,7 @@ export async function fetchFleets(): Promise<Fleet[]> {
   const { data, error } = await supabase
     .from('fleets')
     .select('*')
+    .order('position', { nullsFirst: false })
     .order('name')
   if (error) throw error
   return data ?? []
@@ -31,19 +32,43 @@ export async function fetchActiveFleets(): Promise<Fleet[]> {
     .from('fleets')
     .select('*')
     .eq('active', true)
+    .order('position', { nullsFirst: false })
     .order('name')
   if (error) throw error
   return data ?? []
 }
 
 export async function createFleet(payload: Pick<Fleet, 'name' | 'color' | 'description'>): Promise<Fleet> {
+  // Append new fleets at the end of the manual order.
+  const { data: last } = await supabase
+    .from('fleets')
+    .select('position')
+    .order('position', { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle()
+  const position = (last?.position ?? -1) + 1
+
   const { data, error } = await supabase
     .from('fleets')
-    .insert(payload)
+    .insert({ ...payload, position })
     .select()
     .single()
   if (error) throw error
   return data
+}
+
+/**
+ * Persist a new manual order. Writes each fleet's position to its index in
+ * the given id list, so the order is collision-free and matches the array.
+ */
+export async function reorderFleets(orderedIds: string[]): Promise<void> {
+  const results = await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from('fleets').update({ position: index }).eq('id', id)
+    )
+  )
+  const failed = results.find((r) => r.error)
+  if (failed?.error) throw failed.error
 }
 
 export async function updateFleet(id: string, payload: Partial<Pick<Fleet, 'name' | 'color' | 'description' | 'active'>>): Promise<Fleet> {
