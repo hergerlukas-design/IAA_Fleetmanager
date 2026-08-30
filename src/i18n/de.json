@@ -245,6 +245,9 @@
     "empty": "Noch keine Einträge. Füge oben etwas hinzu.",
     "load_failed": "Liste konnte nicht geladen werden.",
     "save_failed": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+    "added_by": "Eingetragen von {{name}}",
+    "edit_btn": "Bearbeiten",
+    "save_btn": "Speichern",
     "status": {
       "offen": "Offen",
       "kaufen": "Kaufen",

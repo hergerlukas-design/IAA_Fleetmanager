@@ -245,6 +245,9 @@
     "empty": "No items yet. Add something above.",
     "load_failed": "Could not load the list.",
     "save_failed": "Saving failed. Please try again.",
+    "added_by": "Added by {{name}}",
+    "edit_btn": "Edit",
+    "save_btn": "Save",
     "status": {
       "offen": "Open",
       "kaufen": "To buy",
