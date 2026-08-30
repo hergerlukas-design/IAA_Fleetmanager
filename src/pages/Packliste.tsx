@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Plus, Trash2, ChevronDown, Package,
+  Plus, Trash2, ChevronDown, Package, User, Pencil, X,
   Circle, ShoppingCart, Check, PackageCheck,
 } from 'lucide-react'
 import Layout from '@/components/Layout'
@@ -39,6 +39,7 @@ export default function Packliste() {
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<Filter>('alle')
   const [menuId, setMenuId] = useState<string | null>(null)
+  const [editId, setEditId] = useState<string | null>(null)
 
   // Add-Form
   const [name, setName] = useState('')
@@ -129,6 +130,30 @@ export default function Packliste() {
       await updatePackingItem(item.id, { status })
     } catch (err) {
       console.error('[Packliste] status failed:', err)
+      setItems(prev)
+      setError(t('packing.save_failed'))
+    }
+  }
+
+  /** Speichert die im Inline-Editor geänderten Felder eines Eintrags. */
+  async function handleEditSave(
+    item: PackingItem,
+    patch: Pick<PackingItem, 'name' | 'quantity' | 'category'>,
+  ) {
+    const unchanged =
+      patch.name === item.name &&
+      patch.quantity === item.quantity &&
+      patch.category === item.category
+    setEditId(null)
+    if (unchanged) return
+
+    const prev = items
+    setItems(p => p.map(it => (it.id === item.id ? { ...it, ...patch } : it)))
+    setError(null)
+    try {
+      await updatePackingItem(item.id, patch)
+    } catch (err) {
+      console.error('[Packliste] edit failed:', err)
       setItems(prev)
       setError(t('packing.save_failed'))
     }
@@ -281,6 +306,10 @@ export default function Packliste() {
                       onSetStatus={(s) => handleStatus(item, s)}
                       onDelete={() => handleDelete(item.id)}
                       statusLabel={statusLabel}
+                      editing={editId === item.id}
+                      onStartEdit={() => { setMenuId(null); setEditId(item.id) }}
+                      onCancelEdit={() => setEditId(null)}
+                      onSaveEdit={(patch) => handleEditSave(item, patch)}
                     />
                   ))}
                 </ul>
@@ -297,6 +326,7 @@ export default function Packliste() {
 
 function PackingRow({
   item, menuOpen, onToggleMenu, onSetStatus, onDelete, statusLabel,
+  editing, onStartEdit, onCancelEdit, onSaveEdit,
 }: {
   item: PackingItem
   menuOpen: boolean
@@ -304,7 +334,12 @@ function PackingRow({
   onSetStatus: (s: PackingStatus) => void
   onDelete: () => void
   statusLabel: (s: PackingStatus) => string
+  editing: boolean
+  onStartEdit: () => void
+  onCancelEdit: () => void
+  onSaveEdit: (patch: Pick<PackingItem, 'name' | 'quantity' | 'category'>) => void
 }) {
+  const { t } = useTranslation()
   const meta = STATUS_META[item.status]
   const Icon = meta.icon
   const done = item.status === 'gepackt'
@@ -330,14 +365,34 @@ function PackingRow({
     }
   }, [menuOpen])
 
+  // Der Editor ist eine eigene Komponente: Sie wird beim Öffnen frisch gemountet
+  // und übernimmt die Werte des Eintrags damit ohne Sync-Effekt.
+  if (editing) {
+    return <PackingEditRow item={item} onCancel={onCancelEdit} onSave={onSaveEdit} />
+  }
+
   return (
     <li className="flex items-center gap-3 px-3 py-2.5 border-b border-gray-50 last:border-b-0">
       <div className="flex-1 min-w-0">
         <p className={`text-sm truncate ${done ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
           {item.name}
         </p>
-        {item.quantity && (
-          <p className="text-xs text-gray-400 truncate">{item.quantity}</p>
+        {(item.quantity || item.created_by) && (
+          <p className="text-xs text-gray-400 flex items-center gap-1.5 min-w-0">
+            {item.quantity && <span className="truncate">{item.quantity}</span>}
+            {item.quantity && item.created_by && (
+              <span className="text-gray-300 flex-shrink-0">·</span>
+            )}
+            {item.created_by && (
+              <span
+                className="inline-flex items-center gap-1 min-w-0"
+                title={t('packing.added_by', { name: item.created_by })}
+              >
+                <User size={11} className="flex-shrink-0" />
+                <span className="truncate">{item.created_by}</span>
+              </span>
+            )}
+          </p>
         )}
       </div>
 
@@ -380,11 +435,98 @@ function PackingRow({
       </div>
 
       <button
+        onClick={onStartEdit}
+        aria-label={t('packing.edit_btn')}
+        className="p-1 text-gray-300 hover:text-blue-500 transition-colors flex-shrink-0"
+      >
+        <Pencil size={15} />
+      </button>
+
+      <button
         onClick={onDelete}
+        aria-label={t('common.delete')}
         className="p-1 text-gray-300 hover:text-red-400 transition-colors flex-shrink-0"
       >
         <Trash2 size={15} />
       </button>
+    </li>
+  )
+}
+
+// ─── Inline-Editor für einen Eintrag ──────────────────────────────────────────
+
+function PackingEditRow({
+  item, onCancel, onSave,
+}: {
+  item: PackingItem
+  onCancel: () => void
+  onSave: (patch: Pick<PackingItem, 'name' | 'quantity' | 'category'>) => void
+}) {
+  const { t } = useTranslation()
+  const [name, setName] = useState(item.name)
+  const [quantity, setQuantity] = useState(item.quantity ?? '')
+  const [category, setCategory] = useState(item.category ?? '')
+
+  function submit() {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    onSave({
+      name: trimmed,
+      quantity: quantity.trim() || null,
+      category: category.trim() || null,
+    })
+  }
+
+  function onKey(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') submit()
+    if (e.key === 'Escape') onCancel()
+  }
+
+  return (
+    <li className="px-3 py-2.5 border-b border-gray-50 last:border-b-0 bg-blue-50/40 space-y-2">
+      <input
+        autoFocus
+        value={name}
+        onChange={e => setName(e.target.value)}
+        onKeyDown={onKey}
+        placeholder={t('packing.name_placeholder')}
+        className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400 text-sm"
+      />
+
+      <div className="flex gap-2">
+        <input
+          value={quantity}
+          onChange={e => setQuantity(e.target.value)}
+          onKeyDown={onKey}
+          placeholder={t('packing.qty_placeholder')}
+          className="w-1/3 px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400 text-sm"
+        />
+        <input
+          value={category}
+          onChange={e => setCategory(e.target.value)}
+          onKeyDown={onKey}
+          placeholder={t('packing.category_placeholder')}
+          className="flex-1 px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400 text-sm"
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onClick={submit}
+          disabled={!name.trim()}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium disabled:opacity-40 hover:bg-blue-700 transition-colors"
+        >
+          <Check size={15} />
+          {t('packing.save_btn')}
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl border border-gray-300 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+        >
+          <X size={15} />
+          {t('common.cancel')}
+        </button>
+      </div>
     </li>
   )
 }
