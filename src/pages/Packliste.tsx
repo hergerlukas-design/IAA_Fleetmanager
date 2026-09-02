@@ -715,20 +715,21 @@ function PackingRow({
           : dragActive ? 'opacity-60' : ''
       }`}
     >
-      {/* Griff: sofortiges Ziehen – ohne Wartezeit, auch auf dem Handy */}
-      <button
-        type="button"
-        aria-label={t('packing.drag_handle')}
-        onPointerDown={(e) => {
-          if (e.pointerType === 'mouse' && e.button !== 0) return
-          if (!dragActive) onBeginDrag()
-        }}
-        className={`flex-shrink-0 touch-none cursor-grab active:cursor-grabbing transition-colors ${
-          sortMode ? 'p-1.5 -ml-1.5 text-blue-500' : 'p-0.5 -ml-1 text-gray-300 hover:text-gray-500'
-        }`}
-      >
-        <GripVertical size={sortMode ? 20 : 16} />
-      </button>
+      {/* Griff nur im Sortier-Modus: zieht sofort los, während Wischen über
+          die Zeile weiterhin scrollt. Ausserhalb genügt langes Drücken. */}
+      {sortMode && (
+        <button
+          type="button"
+          aria-label={t('packing.drag_handle')}
+          onPointerDown={(e) => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return
+            if (!dragActive) onBeginDrag()
+          }}
+          className="flex-shrink-0 p-1.5 -ml-1.5 text-blue-500 touch-none cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical size={20} />
+        </button>
+      )}
 
       <div className="flex-1 min-w-0">
         <p className={`text-sm truncate ${done ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
