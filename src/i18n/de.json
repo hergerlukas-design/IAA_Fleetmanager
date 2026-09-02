@@ -248,6 +248,11 @@
     "added_by": "Eingetragen von {{name}}",
     "edit_btn": "Bearbeiten",
     "save_btn": "Speichern",
+    "category_pick": "Bestehende:",
+    "sort_hint": "Tipp: Eintrag lange gedrückt halten, um ihn zu sortieren.",
+    "sort_active_hint": "Ziehen zum Sortieren – loslassen zum Ablegen.",
+    "drag_handle": "Zum Sortieren ziehen",
+    "reorder_failed": "Sortierung konnte nicht gespeichert werden.",
     "status": {
       "offen": "Offen",
       "kaufen": "Kaufen",

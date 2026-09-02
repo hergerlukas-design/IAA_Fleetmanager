@@ -248,6 +248,11 @@
     "added_by": "Added by {{name}}",
     "edit_btn": "Edit",
     "save_btn": "Save",
+    "category_pick": "Existing:",
+    "sort_hint": "Tip: long-press an item to sort it.",
+    "sort_active_hint": "Drag to sort – release to drop.",
+    "drag_handle": "Drag to sort",
+    "reorder_failed": "Could not save the new order.",
     "status": {
       "offen": "Open",
       "kaufen": "To buy",

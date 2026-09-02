@@ -47,3 +47,21 @@ export async function deletePackingItem(id: string): Promise<void> {
   const { error } = await supabase.from('packing_items').delete().eq('id', id)
   if (error) throw error
 }
+
+/**
+ * Schreibt die neue Reihenfolge (Feld `position`) für die übergebenen Einträge.
+ * Wird nach dem Sortieren per Drag & Drop aufgerufen; es werden nur die
+ * Einträge übergeben, deren Position sich tatsächlich geändert hat.
+ */
+export async function updatePackingPositions(
+  updates: { id: string; position: number }[],
+): Promise<void> {
+  if (updates.length === 0) return
+  const results = await Promise.all(
+    updates.map(u =>
+      supabase.from('packing_items').update({ position: u.position }).eq('id', u.id),
+    ),
+  )
+  const failed = results.find(r => r.error)
+  if (failed?.error) throw failed.error
+}
