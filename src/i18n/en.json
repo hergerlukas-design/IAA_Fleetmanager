@@ -249,7 +249,7 @@
     "edit_btn": "Edit",
     "save_btn": "Save",
     "category_pick": "Existing:",
-    "sort_hint": "Tip: long-press an item to sort the list.",
+    "sort_hint": "Tip: double-tap an item to mark it packed, long-press to sort the list.",
     "sort_active_hint": "Drag to sort – release to drop.",
     "drag_handle": "Drag to sort",
     "reorder_failed": "Could not save the new order.",

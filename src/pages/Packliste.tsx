@@ -38,6 +38,9 @@ function groupKeyOf(item: PackingItem): string {
 
 /** Wie lange gedrückt werden muss, bis der Sortier-Modus startet (ms). */
 const LONG_PRESS_MS = 400
+/** Maximaler Abstand zweier Tipps, die als Doppeltipp zählen (ms / px). */
+const DOUBLE_TAP_MS = 320
+const DOUBLE_TAP_SLOP = 30
 /** Toleranz in px: mehr Bewegung = Scrollen, kein Long-Press. */
 const LONG_PRESS_SLOP = 10
 
@@ -60,6 +63,11 @@ export default function Packliste() {
   const [category, setCategory] = useState('')
   const [newStatus, setNewStatus] = useState<PackingStatus>('offen')
   const [busy, setBusy] = useState(false)
+
+  // Kurzes Aufleuchten nach einem Doppeltipp
+  const [flashId, setFlashId] = useState<string | null>(null)
+  const flashTimer = useRef<number | null>(null)
+  useEffect(() => () => { if (flashTimer.current) window.clearTimeout(flashTimer.current) }, [])
 
   // Sortieren per Long-Press / Drag
   const [sortMode, setSortMode] = useState(false)
@@ -323,6 +331,15 @@ export default function Packliste() {
     }
   }
 
+  /** Doppeltipp auf eine Zeile: zwischen "gepackt" und "offen" umschalten. */
+  function handleToggleGepackt(item: PackingItem) {
+    setFlashId(item.id)
+    if (flashTimer.current) window.clearTimeout(flashTimer.current)
+    flashTimer.current = window.setTimeout(() => setFlashId(null), 450)
+    navigator.vibrate?.(15)
+    handleStatus(item, item.status === 'gepackt' ? 'offen' : 'gepackt')
+  }
+
   /** Speichert die im Inline-Editor geänderten Felder eines Eintrags. */
   async function handleEditSave(
     item: PackingItem,
@@ -521,6 +538,8 @@ export default function Packliste() {
                       onSaveEdit={(patch) => handleEditSave(item, patch)}
                       categories={categories}
                       registerRow={registerRow}
+                      onDoubleTap={() => handleToggleGepackt(item)}
+                      flash={flashId === item.id}
                       sortMode={sortMode}
                       dragging={dragId === item.id}
                       dragActive={dragId !== null}
@@ -611,7 +630,7 @@ function CategoryChips({
 function PackingRow({
   item, menuOpen, onToggleMenu, onSetStatus, onDelete, statusLabel,
   editing, onStartEdit, onCancelEdit, onSaveEdit, categories,
-  registerRow, sortMode, dragging, dragActive, onBeginDrag,
+  registerRow, onDoubleTap, flash, sortMode, dragging, dragActive, onBeginDrag,
 }: {
   item: PackingItem
   menuOpen: boolean
@@ -625,6 +644,8 @@ function PackingRow({
   onSaveEdit: (patch: Pick<PackingItem, 'name' | 'quantity' | 'category'>) => void
   categories: string[]
   registerRow: (id: string, el: HTMLLIElement | null) => void
+  onDoubleTap: () => void
+  flash: boolean
   sortMode: boolean
   dragging: boolean
   dragActive: boolean
@@ -641,6 +662,7 @@ function PackingRow({
   // Long-Press: Timer + Startpunkt, um Scrollen von Halten zu unterscheiden
   const pressTimer = useRef<number | null>(null)
   const pressStart = useRef<{ x: number; y: number } | null>(null)
+  const lastTap = useRef<{ t: number; x: number; y: number } | null>(null)
 
   const cancelPress = useCallback(() => {
     if (pressTimer.current !== null) {
@@ -668,6 +690,29 @@ function PackingRow({
     const start = pressStart.current
     if (!start || pressTimer.current === null) return
     if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > LONG_PRESS_SLOP) cancelPress()
+  }
+
+  // Zwei kurze Tipps hintereinander schalten den Eintrag auf gepackt und
+  // zurück. Selbst erkannt statt über dblclick, weil mobile Browser den
+  // Doppeltipp sonst als Zoom-Geste behandeln.
+  function onPointerUp(e: React.PointerEvent) {
+    cancelPress()
+    if (editing || sortMode || dragActive) return
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    if ((e.target as HTMLElement).closest('button, input, a')) return
+
+    const now = Date.now()
+    const prev = lastTap.current
+    if (
+      prev &&
+      now - prev.t < DOUBLE_TAP_MS &&
+      Math.hypot(e.clientX - prev.x, e.clientY - prev.y) < DOUBLE_TAP_SLOP
+    ) {
+      lastTap.current = null
+      onDoubleTap()
+    } else {
+      lastTap.current = { t: now, x: e.clientX, y: e.clientY }
+    }
   }
 
   // Klick ausserhalb schliesst das Status-Menü
@@ -706,13 +751,14 @@ function PackingRow({
       ref={el => registerRow(item.id, el)}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={cancelPress}
+      onPointerUp={onPointerUp}
       onPointerCancel={cancelPress}
       onContextMenu={e => { if (dragActive) e.preventDefault() }}
-      className={`flex items-center gap-2 px-3 py-2.5 border-b border-gray-50 last:border-b-0 select-none [-webkit-touch-callout:none] ${
+      className={`flex items-center gap-2 px-3 py-2.5 border-b border-gray-50 last:border-b-0 select-none touch-manipulation [-webkit-touch-callout:none] transition-colors ${
         dragging
           ? 'relative z-10 rounded-xl bg-blue-50 shadow-lg ring-2 ring-blue-300 border-transparent touch-none'
-          : dragActive ? 'opacity-60' : ''
+          : dragActive ? 'opacity-60'
+          : flash ? 'bg-emerald-50' : ''
       }`}
     >
       {/* Griff nur im Sortier-Modus: zieht sofort los, während Wischen über

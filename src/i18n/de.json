@@ -249,7 +249,7 @@
     "edit_btn": "Bearbeiten",
     "save_btn": "Speichern",
     "category_pick": "Bestehende:",
-    "sort_hint": "Tipp: Eintrag lange gedrückt halten, um die Liste zu sortieren.",
+    "sort_hint": "Tipp: Doppeltippen markiert einen Eintrag als gepackt, langes Drücken sortiert die Liste.",
     "sort_active_hint": "Ziehen zum Sortieren – loslassen zum Ablegen.",
     "drag_handle": "Zum Sortieren ziehen",
     "reorder_failed": "Sortierung konnte nicht gespeichert werden.",
