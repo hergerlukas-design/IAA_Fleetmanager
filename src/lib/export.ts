@@ -34,11 +34,11 @@ interface ExportRow {
   KM_Stand: string
   Kraftstoff_Pct: string
   Batterie_Pct: string
+  Schluesselanzahl: string
   Status: string
   Schaeden_Anzahl: number
   Protokoll_Datum: string
   Inspektor: string
-  Schluesselanzahl: string
   Bemerkungen: string
   Protokoll_Abgeschlossen: string
   Erstellt_am: string
@@ -61,11 +61,11 @@ export function exportVehiclesToExcel(
       KM_Stand:                v.km != null ? String(v.km) : '',
       Kraftstoff_Pct:          v.fuel != null ? `${v.fuel}%` : '',
       Batterie_Pct:            v.battery != null ? `${v.battery}%` : '',
+      Schluesselanzahl:        v.key_count != null ? String(v.key_count) : '',
       Status:                  v.status,
       Schaeden_Anzahl:         damages.length,
       Protokoll_Datum:         protocol?.intake_date ?? '',
       Inspektor:               protocol?.inspector_name ?? '',
-      Schluesselanzahl:        protocol?.key_count != null ? String(protocol.key_count) : '',
       Bemerkungen:             protocol?.notes ?? '',
       Protokoll_Abgeschlossen: protocol?.completed ? (protocol.completed_by ?? 'Ja') : 'Nein',
       Erstellt_am:             v.created_at ? new Date(v.created_at).toLocaleDateString('de-CH') : '',

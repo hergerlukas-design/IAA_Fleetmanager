@@ -58,6 +58,7 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
   const [km, setKm]                     = useState('')
   const [fuel, setFuel]                 = useState('100')
   const [battery, setBattery]           = useState('')
+  const [keyCount, setKeyCount]         = useState('')
   const [fleetId, setFleetId]           = useState(defaultFleetId ?? '')
 
   const [brandSuggestions, setBrandSuggestions] = useState<string[]>([])
@@ -103,7 +104,6 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
     inspector_name: userName || '',
     location:       '',
     intake_date:    new Date().toISOString().split('T')[0],
-    key_count:      '',
     notes:          '',
   })
   const canvasRef  = useRef<HTMLCanvasElement | null>(null)
@@ -166,6 +166,7 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
         km:            km ? parseInt(km) : null,
         fuel:          fuel ? parseInt(fuel) : null,
         battery:       battery ? parseInt(battery) : null,
+        key_count:     keyCount !== '' ? parseInt(keyCount) : null,
       }
       if (vehicleId) {
         await updateVehicle(vehicleId, fields)
@@ -364,7 +365,6 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
         inspector_name: protoForm.inspector_name || null,
         location:       protoForm.location || null,
         intake_date:    protoForm.intake_date || null,
-        key_count:      protoForm.key_count !== '' ? parseInt(protoForm.key_count) : null,
         notes:          protoForm.notes || null,
         signature_url:  signatureUrl,
       })
@@ -529,6 +529,14 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
               </label>
               <input type="range" min="0" max="100" step="5" value={battery || 0} onChange={(e) => setBattery(e.target.value)}
                 className="w-full accent-green-500" />
+            </div>
+
+            {/* Schlüsselanzahl */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('vehicles.key_count')}</label>
+              <input type="number" inputMode="numeric" min="0" step="1" placeholder="0"
+                value={keyCount} onChange={(e) => setKeyCount(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-400" />
             </div>
 
             <button onClick={handleStep1} disabled={saving}
@@ -928,14 +936,6 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
               <label className="block text-xs font-medium text-gray-500 mb-1">{t('protocol.date')}</label>
               <input type="date" value={protoForm.intake_date}
                 onChange={e => setProtoForm(p => ({ ...p, intake_date: e.target.value }))}
-                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{t('protocol.key_count')}</label>
-              <input type="number" inputMode="numeric" min="0" step="1" placeholder="0"
-                value={protoForm.key_count}
-                onChange={e => setProtoForm(p => ({ ...p, key_count: e.target.value }))}
                 className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
             </div>
 

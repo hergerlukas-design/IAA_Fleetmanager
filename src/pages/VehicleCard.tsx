@@ -160,6 +160,7 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
     km:            vehicle.km?.toString() ?? '',
     fuel:          vehicle.fuel?.toString() ?? '100',
     battery:       vehicle.battery?.toString() ?? '0',
+    key_count:     vehicle.key_count?.toString() ?? '',
     notes:         vehicle.notes ?? '',
   })
   const [saving, setSaving] = useState(false)
@@ -223,6 +224,7 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
       km:            vehicle.km?.toString() ?? '',
       fuel:          vehicle.fuel?.toString() ?? '100',
       battery:       vehicle.battery?.toString() ?? '0',
+      key_count:     vehicle.key_count?.toString() ?? '',
       notes:         vehicle.notes ?? '',
     })
   }
@@ -239,6 +241,7 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
       km:            form.km ? parseInt(form.km) : null,
       fuel:          form.fuel ? parseInt(form.fuel) : null,
       battery:       form.battery ? parseInt(form.battery) : null,
+      key_count:     form.key_count !== '' ? parseInt(form.key_count) : null,
       notes:         form.notes || null,
     })
     setSaving(false)
@@ -266,6 +269,7 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
             [t('vehicles.km'),            vehicle.km != null ? `${vehicle.km.toLocaleString()} km` : null],
             [t('vehicles.fuel'),          vehicle.fuel != null ? `${vehicle.fuel}%` : null],
             [t('vehicles.battery'),       vehicle.battery ? `${vehicle.battery}%` : null],
+            [t('vehicles.key_count'),     vehicle.key_count != null ? String(vehicle.key_count) : null],
             [t('vehicles.fleet'),         vehicle.fleet?.name],
             [t('vehicles.notes'),         vehicle.notes],
           ].map(([label, val]) => val ? (
@@ -349,6 +353,11 @@ function BasisdatenCard({ vehicle, fleets, locked, isAdmin, onUpdate }: {
             <input type="range" min="0" max="100" step="5" value={form.battery}
               onChange={e => f('battery', e.target.value)}
               className="w-full accent-green-500" />
+          </Field>
+          <Field label={t('vehicles.key_count')}>
+            <input type="number" inputMode="numeric" min="0" step="1" placeholder="0"
+              value={form.key_count} onChange={e => f('key_count', e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
           </Field>
           <Field label={t('vehicles.notes')}>
             <textarea value={form.notes} onChange={e => f('notes', e.target.value)} rows={2}
@@ -991,7 +1000,6 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
     inspector_name: protocol?.inspector_name ?? userName,
     location:       protocol?.location ?? '',
     intake_date:    protocol?.intake_date ?? new Date().toISOString().split('T')[0],
-    key_count:      protocol?.key_count?.toString() ?? '',
     notes:          protocol?.notes ?? '',
   })
   const [saving, setSaving] = useState(false)
@@ -1005,7 +1013,6 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
       inspector_name: protocol?.inspector_name ?? userName,
       location:       protocol?.location ?? '',
       intake_date:    protocol?.intake_date ?? new Date().toISOString().split('T')[0],
-      key_count:      protocol?.key_count?.toString() ?? '',
       notes:          protocol?.notes ?? '',
     })
     setEditing(!protocol)
@@ -1075,11 +1082,7 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
         )
         signatureUrl = await uploadSignature(vehicleId, blob)
       }
-      const payload = {
-        ...form,
-        key_count:     form.key_count !== '' ? parseInt(form.key_count) : null,
-        signature_url: signatureUrl,
-      }
+      const payload = { ...form, signature_url: signatureUrl }
       const saved = protocol
         ? await updateProtocol(protocol.id, payload)
         : await createProtocol(vehicleId, payload)
@@ -1143,7 +1146,6 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
               [t('protocol.inspector'), protocol.inspector_name],
               [t('protocol.location'),  protocol.location],
               [t('protocol.date'),      protocol.intake_date],
-              [t('protocol.key_count'), protocol.key_count != null ? String(protocol.key_count) : null],
             ].map(([label, val]) => val ? (
               <div key={label} className="bg-gray-50 rounded-xl px-3 py-2.5">
                 <p className="text-xs text-gray-400">{label}</p>
@@ -1188,12 +1190,6 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
           <Field label={t('protocol.date')}>
             <input type="date" value={form.intake_date}
               onChange={e => setForm(p => ({ ...p, intake_date: e.target.value }))}
-              className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
-          </Field>
-          <Field label={t('protocol.key_count')}>
-            <input type="number" inputMode="numeric" min="0" step="1" placeholder="0"
-              value={form.key_count}
-              onChange={e => setForm(p => ({ ...p, key_count: e.target.value }))}
               className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
           </Field>
           <Field label={t('protocol.notes')}>
