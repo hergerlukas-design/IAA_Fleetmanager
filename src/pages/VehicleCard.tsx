@@ -898,6 +898,75 @@ function AnnahmeActionCard({ vehicleId, onRefresh }: {
   )
 }
 
+// ─── Protokoll-Bemerkungen ────────────────────────────────────────────────────
+// Bemerkungen sind bewusst nicht Teil der Annahme-Sperre: Sie lassen sich auch
+// nach bestätigter Annahme jederzeit ergänzen.
+
+function ProtocolNotesEditor({ protocol, onRefresh }: {
+  protocol: IntakeProtocol
+  onRefresh: () => void
+}) {
+  const { t } = useTranslation()
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft]     = useState(protocol.notes ?? '')
+  const [saving, setSaving]   = useState(false)
+
+  const [prevNotes, setPrevNotes] = useState(protocol.notes)
+  if (protocol.notes !== prevNotes) {
+    setPrevNotes(protocol.notes)
+    if (!editing) setDraft(protocol.notes ?? '')
+  }
+
+  async function save() {
+    setSaving(true)
+    try {
+      await updateProtocol(protocol.id, { notes: draft.trim() || null })
+      setEditing(false)
+      onRefresh()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-gray-50 rounded-xl px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-gray-400">{t('protocol.notes')}</p>
+        {!editing && (
+          <button onClick={() => { setDraft(protocol.notes ?? ''); setEditing(true) }}
+            className="text-blue-500 hover:text-blue-700">
+            <Pencil size={14} />
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <div className="mt-2 space-y-2">
+          <textarea value={draft} onChange={e => setDraft(e.target.value)} rows={3}
+            placeholder={t('protocol.notes_placeholder')}
+            className="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm focus:outline-none focus:border-blue-400 resize-none" />
+          <div className="flex gap-2">
+            <button onClick={() => { setDraft(protocol.notes ?? ''); setEditing(false) }}
+              className="flex-1 py-2 rounded-xl border border-gray-300 text-gray-600 text-sm">
+              {t('common.cancel')}
+            </button>
+            <button onClick={save} disabled={saving}
+              className="flex-1 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium disabled:opacity-50">
+              {saving ? t('common.loading') : t('common.save')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className={`text-sm mt-0.5 whitespace-pre-wrap ${protocol.notes ? 'font-semibold text-gray-900' : 'text-gray-400'}`}>
+          {protocol.notes || t('protocol.notes_empty')}
+        </p>
+      )}
+
+      <p className="text-xs text-gray-400 mt-1.5">{t('protocol.notes_editable_hint')}</p>
+    </div>
+  )
+}
+
 // ─── Protokoll Card ───────────────────────────────────────────────────────────
 
 function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
@@ -922,6 +991,7 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
     inspector_name: protocol?.inspector_name ?? userName,
     location:       protocol?.location ?? '',
     intake_date:    protocol?.intake_date ?? new Date().toISOString().split('T')[0],
+    key_count:      protocol?.key_count?.toString() ?? '',
     notes:          protocol?.notes ?? '',
   })
   const [saving, setSaving] = useState(false)
@@ -935,6 +1005,7 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
       inspector_name: protocol?.inspector_name ?? userName,
       location:       protocol?.location ?? '',
       intake_date:    protocol?.intake_date ?? new Date().toISOString().split('T')[0],
+      key_count:      protocol?.key_count?.toString() ?? '',
       notes:          protocol?.notes ?? '',
     })
     setEditing(!protocol)
@@ -1004,7 +1075,11 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
         )
         signatureUrl = await uploadSignature(vehicleId, blob)
       }
-      const payload = { ...form, signature_url: signatureUrl }
+      const payload = {
+        ...form,
+        key_count:     form.key_count !== '' ? parseInt(form.key_count) : null,
+        signature_url: signatureUrl,
+      }
       const saved = protocol
         ? await updateProtocol(protocol.id, payload)
         : await createProtocol(vehicleId, payload)
@@ -1068,7 +1143,7 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
               [t('protocol.inspector'), protocol.inspector_name],
               [t('protocol.location'),  protocol.location],
               [t('protocol.date'),      protocol.intake_date],
-              [t('protocol.notes'),     protocol.notes],
+              [t('protocol.key_count'), protocol.key_count != null ? String(protocol.key_count) : null],
             ].map(([label, val]) => val ? (
               <div key={label} className="bg-gray-50 rounded-xl px-3 py-2.5">
                 <p className="text-xs text-gray-400">{label}</p>
@@ -1076,6 +1151,9 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
               </div>
             ) : null)}
           </div>
+
+          {/* Bemerkungen – bleiben auch nach bestätigter Annahme bearbeitbar */}
+          <ProtocolNotesEditor protocol={protocol} onRefresh={onRefresh} />
 
           {protocol.signature_url && (
             <div className="bg-gray-50 rounded-xl p-3">
@@ -1112,9 +1190,17 @@ function ProtokollCard({ vehicleId, protocol, vehicleKm, isAdmin, onRefresh }: {
               onChange={e => setForm(p => ({ ...p, intake_date: e.target.value }))}
               className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
           </Field>
+          <Field label={t('protocol.key_count')}>
+            <input type="number" inputMode="numeric" min="0" step="1" placeholder="0"
+              value={form.key_count}
+              onChange={e => setForm(p => ({ ...p, key_count: e.target.value }))}
+              className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
+          </Field>
           <Field label={t('protocol.notes')}>
-            <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2}
+            <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3}
+              placeholder={t('protocol.notes_placeholder')}
               className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400 resize-none" />
+            <p className="text-xs text-gray-400 mt-1">{t('protocol.notes_editable_hint')}</p>
           </Field>
 
           {/* Signature */}

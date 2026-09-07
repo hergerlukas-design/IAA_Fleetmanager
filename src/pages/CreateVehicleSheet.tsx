@@ -103,6 +103,7 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
     inspector_name: userName || '',
     location:       '',
     intake_date:    new Date().toISOString().split('T')[0],
+    key_count:      '',
     notes:          '',
   })
   const canvasRef  = useRef<HTMLCanvasElement | null>(null)
@@ -363,6 +364,7 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
         inspector_name: protoForm.inspector_name || null,
         location:       protoForm.location || null,
         intake_date:    protoForm.intake_date || null,
+        key_count:      protoForm.key_count !== '' ? parseInt(protoForm.key_count) : null,
         notes:          protoForm.notes || null,
         signature_url:  signatureUrl,
       })
@@ -930,9 +932,19 @@ export default function CreateVehicleSheet({ defaultFleetId, onDone, onClose }: 
             </div>
 
             <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('protocol.key_count')}</label>
+              <input type="number" inputMode="numeric" min="0" step="1" placeholder="0"
+                value={protoForm.key_count}
+                onChange={e => setProtoForm(p => ({ ...p, key_count: e.target.value }))}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400" />
+            </div>
+
+            <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">{t('protocol.notes')}</label>
-              <textarea value={protoForm.notes} onChange={e => setProtoForm(p => ({ ...p, notes: e.target.value }))} rows={2}
+              <textarea value={protoForm.notes} onChange={e => setProtoForm(p => ({ ...p, notes: e.target.value }))} rows={3}
+                placeholder={t('protocol.notes_placeholder')}
                 className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-400 resize-none" />
+              <p className="text-xs text-gray-400 mt-1">{t('protocol.notes_editable_hint')}</p>
             </div>
 
             {/* Signature */}

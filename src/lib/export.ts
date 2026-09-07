@@ -38,6 +38,8 @@ interface ExportRow {
   Schaeden_Anzahl: number
   Protokoll_Datum: string
   Inspektor: string
+  Schluesselanzahl: string
+  Bemerkungen: string
   Protokoll_Abgeschlossen: string
   Erstellt_am: string
   Erstellt_von: string
@@ -63,6 +65,8 @@ export function exportVehiclesToExcel(
       Schaeden_Anzahl:         damages.length,
       Protokoll_Datum:         protocol?.intake_date ?? '',
       Inspektor:               protocol?.inspector_name ?? '',
+      Schluesselanzahl:        protocol?.key_count != null ? String(protocol.key_count) : '',
+      Bemerkungen:             protocol?.notes ?? '',
       Protokoll_Abgeschlossen: protocol?.completed ? (protocol.completed_by ?? 'Ja') : 'Nein',
       Erstellt_am:             v.created_at ? new Date(v.created_at).toLocaleDateString('de-CH') : '',
       Erstellt_von:            v.created_by ?? '',
