@@ -16,6 +16,8 @@ export interface Vehicle {
   km: number | null
   fuel: number | null
   battery: number | null
+  /** Anzahl der bei der Annahme übergebenen Schlüssel. */
+  key_count?: number | null
   notes: string | null
   status: 'in_bearbeitung' | 'abgeschlossen'
   werkstatt: boolean | null
@@ -34,8 +36,6 @@ export interface IntakeProtocol {
   inspector_name: string | null
   location: string | null
   intake_date: string | null
-  /** Anzahl der bei der Annahme übergebenen Schlüssel. */
-  key_count: number | null
   notes: string | null
   signature_url: string | null
   completed: boolean
