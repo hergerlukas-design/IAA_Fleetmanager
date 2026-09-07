@@ -34,6 +34,8 @@ export interface IntakeProtocol {
   inspector_name: string | null
   location: string | null
   intake_date: string | null
+  /** Anzahl der bei der Annahme übergebenen Schlüssel. */
+  key_count: number | null
   notes: string | null
   signature_url: string | null
   completed: boolean
